@@ -1,0 +1,11 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+# NLP
+rake-nltk==1.0.6
+nltk==3.9.1
+textstat==0.7.3
+# External SEO & URL parsing
+requests==2.32.3
+beautifulsoup4==4.12.3
