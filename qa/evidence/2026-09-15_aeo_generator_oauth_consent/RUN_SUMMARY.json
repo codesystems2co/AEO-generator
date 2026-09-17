@@ -1,0 +1,58 @@
+{
+  "when": "2026-09-15T21:46:17+0200",
+  "global": "PASS",
+  "account_note": "PM E2E: codesystems.co@gmail.com",
+  "ui": "http://2.28.106.22:9012",
+  "steps": [
+    {
+      "step": "api_google_connected",
+      "result": "PASS",
+      "detail": "{'configured': True, 'connected': True, 'client_id_set': True, 'redirect_uri': 'https://arkiphere.cloud/aeo/google/oauth/callback'}"
+    },
+    {
+      "step": "api_readiness_consent",
+      "result": "PASS",
+      "detail": "passed=7/9"
+    },
+    {
+      "step": "ui_google_connected",
+      "result": "PASS",
+      "detail": "◇\nAEO / SEO Generator\n①\nWizard\nG\nGoogle Search\n☰\nOllama Packs\n⇄\nConnectors\n💬\nChat IA\n📖\nGuide\n◇\nMeta Tags\n◆\nKeywords\n▣\nContent Analysis\n◈\nAEO Suggest\n★\nSEO Score\n◉\nNLP\n🔗\nURL Analyze\n⊕\nExternal SEO\n🤖\nGEO\nGOOGLE SEARCH READINESS\n\nPublic crawl checks plu"
+    },
+    {
+      "step": "ui_wizard_consent_path",
+      "result": "PASS",
+      "detail": "◇\nAEO / SEO Generator\n①\nWizard\nG\nGoogle Search\n☰\nOllama Packs\n⇄\nConnectors\n💬\nChat IA\n📖\nGuide\n◇\nMeta Tags\n◆\nKeywords\n▣\nContent Analysis\n◈\nAEO Suggest\n★\nSEO Score\n◉\nNLP\n🔗\nURL Analyze\n⊕\nExternal SEO\n🤖\nGEO\nGUIDED PACKAGE — GOOGLE SEARCH → AEO → SEO\n\nSame"
+    },
+    {
+      "step": "ui_wizard_continue_aeo",
+      "result": "PASS",
+      "detail": "◇\nAEO / SEO Generator\n①\nWizard\nG\nGoogle Search\n☰\nOllama Packs\n⇄\nConnectors\n💬\nChat IA\n📖\nGuide\n◇\nMeta Tags\n◆\nKeywords\n▣\nContent Analysis\n◈\nAEO Suggest\n★\nSEO Score\n◉\nNLP\n🔗\nURL Analyze\n⊕\nExternal SEO\n🤖\nGE"
+    },
+    {
+      "step": "callback_public_307",
+      "result": "PASS",
+      "detail": "https://arkiphere.cloud/aeo/google/oauth/callback → 307 (PM+precheck)"
+    }
+  ],
+  "screen_review": [
+    {
+      "file": "01_google_connected.png",
+      "expected": "Google Search tab shows OAuth connected / consent OK",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze",
+      "tester": "PASS"
+    },
+    {
+      "file": "02_wizard_google_connected.png",
+      "expected": "Wizard Google step reflects consent/connected path",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze",
+      "tester": "PASS"
+    },
+    {
+      "file": "03_wizard_continue_aeo.png",
+      "expected": "Wizard advanced toward AEO after Google",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score",
+      "tester": "PASS"
+    }
+  ]
+}

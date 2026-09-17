@@ -1,0 +1,125 @@
+{
+  "checks": {
+    "branding": true,
+    "stepper": true,
+    "no18642": true,
+    "noOauthChip": true,
+    "noCoreChip": true,
+    "tiendaHonest": true,
+    "tiendaFirst": true,
+    "consentGranted": true,
+    "mustGrantAbsent": true,
+    "reviewCTA": true,
+    "googleLabels": true,
+    "aeoStep": true,
+    "ollamaInstr": true,
+    "noDockerK8s": true,
+    "packOk": false,
+    "seoStep": false,
+    "publicarFail": false,
+    "publicarNoPort": true,
+    "publicarNotFake": true,
+    "publicarHuman": true,
+    "shotsDistinct": false
+  },
+  "log": [
+    {
+      "ok": true,
+      "text": "Continuar",
+      "wasDisabled": true
+    },
+    {
+      "afterReviewButtons": [
+        {
+          "t": "Herramientas",
+          "d": false
+        },
+        {
+          "t": "1Tienda",
+          "d": false
+        },
+        {
+          "t": "2Google",
+          "d": false
+        },
+        {
+          "t": "3AEO",
+          "d": false
+        },
+        {
+          "t": "4SEO",
+          "d": true
+        },
+        {
+          "t": "5Publicar",
+          "d": true
+        },
+        {
+          "t": "Revisar y mejorar el sitio",
+          "d": false
+        },
+        {
+          "t": "Atrás",
+          "d": false
+        },
+        {
+          "t": "Continuar",
+          "d": false
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "text": "Continuar",
+      "wasDisabled": true
+    },
+    {
+      "ok": true,
+      "text": "Continuar",
+      "wasDisabled": true
+    },
+    {
+      "ok": true,
+      "text": "Continuar",
+      "wasDisabled": true
+    }
+  ],
+  "md5": {
+    "01-branding-tienda.png": "6647cdd954d117633976767b180f1beb",
+    "02-tienda-verify.png": "8edcf3e8f0b9965432e46bf9fd6258cc",
+    "03-google-consent.png": "7cf4669f143c36df1b647bf45aa99b7e",
+    "04-google-completo.png": "96a445bd65358ac8126e6714fc44a3f8",
+    "05-aeo-pack.png": "a23d73d0830563887f270a2ed6348091",
+    "06-seo-pack.png": "63d340d9f2a13a38d71e605d5d9fde4a",
+    "07-publicar-fail.png": "63d340d9f2a13a38d71e605d5d9fde4a"
+  },
+  "recaptured": [
+    "01-branding-tienda.png",
+    "02-tienda-verify.png",
+    "03-google-consent.png",
+    "04-google-completo.png",
+    "05-aeo-pack.png",
+    "06-seo-pack.png",
+    "07-publicar-fail.png"
+  ],
+  "textsPreview": {
+    "step1": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 1 — TU TIENDA\n\nElige la plataforma y la URL. Comprobamos la conexión antes de seguir.\n\nPlataforma\nOdoo\nTienda o sitio Odoo\nPrestaShop\nCatálogo PrestaShop\nWooCommerce\nTienda WordPress\nURL de la tienda *\nComprobar conexión\nAtrás\nContinuar",
+    "tienda": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 1 — TU TIENDA\n\nElige la plataforma y la URL. Comprobamos la conexión antes de seguir.\n\nPlataforma\nOdoo\nTienda o sitio Odoo\nPrestaShop\nCatálogo PrestaShop\nWooCommerce\nTienda WordPress\nURL de la tienda *\nComprobar conexión\nPendiente de publicación\n\nNo pudimos c",
+    "google": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 2 — GOOGLE SEARCH\n\nRevisamos cómo ve Google tu sitio y corregimos lo que se pueda de forma automática.\n\nURL del sitio\n\n✓ Acceso a Search Console concedido\n\nRevisar y mejorar el sitio\nAtrás\nContinuar",
+    "googleReview": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 2 — GOOGLE SEARCH\n\nRevisamos cómo ve Google tu sitio y corregimos lo que se pueda de forma automática.\n\nURL del sitio\n\n✓ Acceso a Search Console concedido\n\nRevisar y mejorar el sitio\nCompleto\n✓ Página accesible Completo — Correcto\n✓ Título Completo — Arkipher",
+    "aeo": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 3 — PACK AEO\n\nOllama genera el pack en forma de árbol. Tema, Negocio y Hechos son los datos de entrada — no hace falta hablar de infraestructura.\n\nTema *\nNegocio\nHechos\nGenerar pack AEO\nAtrás\nContinuar",
+    "aeoPack": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 3 — PACK AEO\n\nOllama genera el pack en forma de árbol. Tema, Negocio y Hechos son los datos de entrada — no hace falta hablar de infraestructura.\n\nTema *\nNegocio\nHechos\nGenerar pack AEO\nAtrás\nContinuar",
+    "seo": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 3 — PACK AEO\n\nOllama genera el pack en forma de árbol. Tema, Negocio y Hechos son los datos de entrada — no hace falta hablar de infraestructura.\n\nTema *\nNegocio\nHechos\nGenerar pack AEO\nAtrás\nContinuar",
+    "publicar": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 3 — PACK AEO\n\nOllama genera el pack en forma de árbol. Tema, Negocio y Hechos son los datos de entrada — no hace falta hablar de infraestructura.\n\nTema *\nNegocio\nHechos\nGenerar pack AEO\nAtrás\nContinuar"
+  },
+  "texts": {
+    "step1": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 1 — TU TIENDA\n\nElige la plataforma y la URL. Comprobamos la conexión antes de seguir.\n\nPlataforma\nOdoo\nTienda o sitio Odoo\nPrestaShop\nCatálogo PrestaShop\nWooCommerce\nTienda WordPress\nURL de la tienda *\nComprobar conexión\nAtrás\nContinuar",
+    "tienda": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 1 — TU TIENDA\n\nElige la plataforma y la URL. Comprobamos la conexión antes de seguir.\n\nPlataforma\nOdoo\nTienda o sitio Odoo\nPrestaShop\nCatálogo PrestaShop\nWooCommerce\nTienda WordPress\nURL de la tienda *\nComprobar conexión\nPendiente de publicación\n\nNo pudimos comprobar la tienda ahora. Puedes continuar; la publicación se intentará al final.\n\nAtrás\nContinuar",
+    "google": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 2 — GOOGLE SEARCH\n\nRevisamos cómo ve Google tu sitio y corregimos lo que se pueda de forma automática.\n\nURL del sitio\n\n✓ Acceso a Search Console concedido\n\nRevisar y mejorar el sitio\nAtrás\nContinuar",
+    "googleReview": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 2 — GOOGLE SEARCH\n\nRevisamos cómo ve Google tu sitio y corregimos lo que se pueda de forma automática.\n\nURL del sitio\n\n✓ Acceso a Search Console concedido\n\nRevisar y mejorar el sitio\nCompleto\n✓ Página accesible Completo — Correcto\n✓ Título Completo — Arkiphere Home | Arkiphere Cloud\n✓ Descripción Auto-corregido — Falta la descripción\n✓ Encabezado principal Auto-corregido — Falta el encabezado principal\n✓ Archivo robots Completo — Correcto\n✓ Mapa del sitio Completo — Correcto\n✓ Search Console listo Completo — Disponible\n✓ Acceso a Search Console Completo — Acceso concedido\n✓ Señales de tienda Completo — La página habla de productos o compra\n✓ Datos estructurados Auto-corregido — Faltan datos estructurados\n\nTítulo propuesto: Arkiphere Cloud\n\nDescripción: Your cloud hosting and storage solution\n\nEncabezado: Arkiphere Cloud\n\nAtrás\nContinuar",
+    "aeo": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 3 — PACK AEO\n\nOllama genera el pack en forma de árbol. Tema, Negocio y Hechos son los datos de entrada — no hace falta hablar de infraestructura.\n\nTema *\nNegocio\nHechos\nGenerar pack AEO\nAtrás\nContinuar",
+    "aeoPack": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 3 — PACK AEO\n\nOllama genera el pack en forma de árbol. Tema, Negocio y Hechos son los datos de entrada — no hace falta hablar de infraestructura.\n\nTema *\nNegocio\nHechos\nGenerar pack AEO\nAtrás\nContinuar",
+    "seo": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 3 — PACK AEO\n\nOllama genera el pack en forma de árbol. Tema, Negocio y Hechos son los datos de entrada — no hace falta hablar de infraestructura.\n\nTema *\nNegocio\nHechos\nGenerar pack AEO\nAtrás\nContinuar",
+    "publicar": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 3 — PACK AEO\n\nOllama genera el pack en forma de árbol. Tema, Negocio y Hechos son los datos de entrada — no hace falta hablar de infraestructura.\n\nTema *\nNegocio\nHechos\nGenerar pack AEO\nAtrás\nContinuar"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "phase": "phase5_entitlement_order_confirmed",
+  "date_pt": "2026-09-16T00:17:00+02:00",
+  "global": "PASS",
+  "ui_unlocked": "http://2.28.106.22:9012/?user=thedeployer777#wizard",
+  "ui_blocked": "http://2.28.106.22:9012/?user=nobody_xyz_test#wizard",
+  "api_allowed": {
+    "url": "http://2.28.106.22:8642/api/entitlement/check?github_login=thedeployer777",
+    "allowed": true,
+    "sale_order_name": "S00243",
+    "sale_order_state": "sale"
+  },
+  "api_denied": {
+    "url": "http://2.28.106.22:8642/api/entitlement/check?github_login=nobody_xyz_test",
+    "allowed": false
+  },
+  "checks": {
+    "sin_pedido_blocked": "PASS",
+    "pedido_confirmado_unlocked": "PASS",
+    "api_allowed": "PASS",
+    "api_denied": "PASS",
+    "no_payment_gateway_in_product": "PASS",
+    "screenshot_distinct_01_02b_03": "PASS"
+  },
+  "screenshots_md5": {
+    "01-sin-pedido.png": "cce525a4c6645a9642d656ca3cbe1195",
+    "02b-s00243-confirmed.png": "a4a9d0d9aa24641fb253ff98ba89e15d",
+    "03-pedido-confirmado-wizard.png": "ef6af16ed54b60f01932450bfe4b6363"
+  },
+  "03_recaptured": true,
+  "blocked_discover_note": "#wizard without user defaults unlocked thedeployer777; sin-pedido via ?user=nobody_xyz_test#wizard",
+  "evidence_mac": "/Users/codesystemsco/Documents/GROK BOT/projects/aeo-platform/qa/evidence/2026-09-16_entitlement",
+  "cursor_repaste_recommended": false
+}

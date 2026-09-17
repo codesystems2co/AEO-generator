@@ -1,0 +1,9 @@
+READY — 2026-09-16 hostname lock + gate UX (partial API)
+
+Live :9012 Adquirir el pack + site value-only PASS.
+CE uniqueness + Arkiphere consume site mismatch PASS (READY_CE).
+Generator consume site-forward + packs 403: GAP (honest).
+
+Evidence: _bmad-output/2026-09-16_hostname_lock/HOSTNAME_LOCK_TESTED.md
+CE: bmad/_bmad-output/2026-09-16_hostname_lock/READY_CE
+Order: S00246 kept.

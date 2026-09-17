@@ -1,0 +1,57 @@
+{
+  "global": "PASS",
+  "ui": "http://2.28.106.22:9012/?gsc=connected#wizard",
+  "checks": [
+    {
+      "id": "1_branding",
+      "result": "PASS",
+      "detail": "Search Engine Optimizator + Arkiphere logo; stepper Tienda→Google→AEO→SEO→Publicar"
+    },
+    {
+      "id": "2_no_tech_chips",
+      "result": "PASS",
+      "detail": "No Core/:18642/oauth status chips. Note: AEO step prose still says 'Ollama genera el pack' (instruction, not badge)"
+    },
+    {
+      "id": "3_google_human_consent",
+      "result": "PASS",
+      "detail": "✓ Acceso a Search Console concedido with ?gsc=connected; no ○ must grant"
+    },
+    {
+      "id": "4_paso1_cta",
+      "result": "PASS",
+      "detail": "Comprobar conexión + Pendiente de publicación / honest continue message"
+    },
+    {
+      "id": "5_tienda_first",
+      "result": "PASS",
+      "detail": "Paso 1 platform select + verify before Google"
+    },
+    {
+      "id": "6_aeo_seo_business",
+      "result": "PASS",
+      "detail": "Tema/Negocio/Hechos business placeholders; live Ollama pack + SEO tree (remaining_results packOk/seoOk)"
+    },
+    {
+      "id": "7_publicar_honest_fail",
+      "result": "PASS",
+      "detail": "No se publicó / tienda no disponible / no se simuló — not UI FAIL; no :18642"
+    },
+    {
+      "id": "8_screenshot_distinct",
+      "result": "PASS",
+      "detail": "Delivered 01–07 all distinct md5; live_capture 06≡07 was capture miss — keep delivered pack"
+    }
+  ],
+  "delivered_md5": {
+    "01-branding-tienda.png": "90843dc8ceed162d295e181af6a38439",
+    "02-tienda-verify.png": "aded5b1b8fddf680468e9cfbfb55565e",
+    "03-google-consent.png": "87d8ac0d7132e0b8c2ef331724a1c2e7",
+    "04-google-completo.png": "1769a1426ecd348caba718ccbefd9aab",
+    "05-aeo-pack.png": "dc3a5324b4716ac8b3da82d5ae00dcd7",
+    "06-seo-pack.png": "e33cddf41115974368f6f9f5319f5553",
+    "07-publicar-fail.png": "2a103930ab9ac0d615874788967c60be"
+  },
+  "live_walk": "live_capture/walk_results.json + remaining_results.json",
+  "note": "Board polish cards may already be Done; this is formal Tester gate."
+}

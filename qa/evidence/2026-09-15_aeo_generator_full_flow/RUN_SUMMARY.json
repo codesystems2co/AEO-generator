@@ -1,0 +1,234 @@
+{
+  "when": "2026-09-15T20:00:14+0200",
+  "ui": "http://2.28.106.22:9012",
+  "api": "http://2.28.106.22:8642",
+  "global": "PASS",
+  "steps": [
+    {
+      "step": "api_health",
+      "result": "PASS",
+      "detail": "{'status': 'ok'}"
+    },
+    {
+      "step": "api_google_readiness",
+      "result": "PASS",
+      "detail": "passed=4/7 mode=unset"
+    },
+    {
+      "step": "api_packs_generate",
+      "result": "PASS",
+      "detail": "backend=ollama model=llama3.2:3b"
+    },
+    {
+      "step": "api_connectors_unreachable_expected",
+      "result": "PASS",
+      "detail": "{'reachable': False, 'core_url': 'http://172.17.0.1:18642', 'message': 'AEO Core :18642 is not reachable. Start Core (server.py); this generator does not replace it.', 'probes': [{'url': 'http://172.17.0.1:18642/health',"
+    },
+    {
+      "step": "shot_00_home_default.png",
+      "result": "PASS",
+      "detail": "Default product UI / Wizard hits=3/3"
+    },
+    {
+      "step": "shot_01_wizard.png",
+      "result": "PASS",
+      "detail": "Wizard guided Google→AEO→SEO hits=6/6"
+    },
+    {
+      "step": "shot_01b_wizard_google_readiness.png",
+      "result": "PASS",
+      "detail": "Wizard after Run Google readiness hits=8/9"
+    },
+    {
+      "step": "shot_02_google_search.png",
+      "result": "PASS",
+      "detail": "Google Search tab OAuth/SA modes hits=4/4"
+    },
+    {
+      "step": "shot_02b_google_readiness_result.png",
+      "result": "PASS",
+      "detail": "Google readiness results for arkiphere.cloud hits=8/8"
+    },
+    {
+      "step": "ui_google_readiness_result",
+      "result": "PASS",
+      "detail": "◇\nAEO / SEO Generator\n①\nWizard\nG\nGoogle Search\n☰\nOllama Packs\n⇄\nConnectors\n💬\nChat IA\n📖\nGuide\n◇\nMeta Tags\n◆\nKeywords\n▣\nContent Analysis\n◈\nAEO Suggest\n★\nSEO Score\n◉\nNLP\n🔗\nURL Analyze\n⊕\nExternal SEO\n🤖\nGE"
+    },
+    {
+      "step": "shot_03_ollama_packs.png",
+      "result": "PASS",
+      "detail": "Ollama Packs form before generate hits=4/4"
+    },
+    {
+      "step": "shot_03b_ollama_pack_tree.png",
+      "result": "PASS",
+      "detail": "recaptured tree after generate completed"
+    },
+    {
+      "step": "ui_packs_tree_visible",
+      "result": "PASS",
+      "detail": "recaptured tree after generate completed"
+    },
+    {
+      "step": "shot_04_wizard_progress.png",
+      "result": "PASS",
+      "detail": "Wizard after guided progress hits=5/6"
+    },
+    {
+      "step": "shot_05_connectors_core_offline.png",
+      "result": "PASS",
+      "detail": "Connectors Core offline expected hits=7/7"
+    },
+    {
+      "step": "shot_05b_connectors_write_attempt.png",
+      "result": "PASS",
+      "detail": "Connectors write attempt with Core down hits=7/8"
+    },
+    {
+      "step": "shot_06_meta_tags.png",
+      "result": "PASS",
+      "detail": "Meta Tags form filled hits=4/4"
+    },
+    {
+      "step": "shot_06b_meta_tags_result.png",
+      "result": "PASS",
+      "detail": "Meta Tags generate result hits=7/8"
+    },
+    {
+      "step": "deeplink_wizard",
+      "result": "PASS",
+      "detail": "hash=#wizard active=①\nWizard"
+    },
+    {
+      "step": "deeplink_google",
+      "result": "PASS",
+      "detail": "hash=#google active=G\nGoogle Search"
+    },
+    {
+      "step": "deeplink_packs",
+      "result": "PASS",
+      "detail": "hash=#packs active=☰\nOllama Packs"
+    },
+    {
+      "step": "deeplink_connectors",
+      "result": "PASS",
+      "detail": "hash=#connectors active=⇄\nConnectors"
+    },
+    {
+      "step": "deeplink_meta",
+      "result": "PASS",
+      "detail": "hash=#meta active=◇\nMeta Tags"
+    }
+  ],
+  "screen_review": [
+    {
+      "file": "00_home_default.png",
+      "expected": "Default product UI / Wizard",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | GE",
+      "hits": "3/3",
+      "secrets": "none",
+      "fresh": "full flow run",
+      "tester": "PASS"
+    },
+    {
+      "file": "01_wizard.png",
+      "expected": "Wizard guided Google→AEO→SEO",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | GE",
+      "hits": "6/6",
+      "secrets": "none",
+      "fresh": "full flow run",
+      "tester": "PASS"
+    },
+    {
+      "file": "01b_wizard_google_readiness.png",
+      "expected": "Wizard after Run Google readiness",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | GE",
+      "hits": "8/9",
+      "secrets": "none",
+      "fresh": "full flow run",
+      "tester": "PASS"
+    },
+    {
+      "file": "02_google_search.png",
+      "expected": "Google Search tab OAuth/SA modes",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | GE",
+      "hits": "4/4",
+      "secrets": "none",
+      "fresh": "full flow run",
+      "tester": "PASS"
+    },
+    {
+      "file": "02b_google_readiness_result.png",
+      "expected": "Google readiness results for arkiphere.cloud",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | GE",
+      "hits": "8/8",
+      "secrets": "none",
+      "fresh": "full flow run",
+      "tester": "PASS"
+    },
+    {
+      "file": "03_ollama_packs.png",
+      "expected": "Ollama Packs form before generate",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | GE",
+      "hits": "4/4",
+      "secrets": "none",
+      "fresh": "full flow run",
+      "tester": "PASS"
+    },
+    {
+      "file": "03b_ollama_pack_tree.png",
+      "expected": "Ollama pack tree/resume after generate",
+      "visible": "recaptured after generate finished (not Generating...)",
+      "hits": "6/10",
+      "secrets": "none",
+      "fresh": "full flow recapture",
+      "tester": "PASS"
+    },
+    {
+      "file": "04_wizard_progress.png",
+      "expected": "Wizard after guided progress",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | GE",
+      "hits": "5/6",
+      "secrets": "none",
+      "fresh": "full flow run",
+      "tester": "PASS"
+    },
+    {
+      "file": "05_connectors_core_offline.png",
+      "expected": "Connectors Core offline expected",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | GE",
+      "hits": "7/7",
+      "secrets": "none",
+      "fresh": "full flow run",
+      "tester": "PASS"
+    },
+    {
+      "file": "05b_connectors_write_attempt.png",
+      "expected": "Connectors write attempt with Core down",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | GE",
+      "hits": "7/8",
+      "secrets": "none",
+      "fresh": "full flow run",
+      "tester": "PASS"
+    },
+    {
+      "file": "06_meta_tags.png",
+      "expected": "Meta Tags form filled",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | GE",
+      "hits": "4/4",
+      "secrets": "none",
+      "fresh": "full flow run",
+      "tester": "PASS"
+    },
+    {
+      "file": "06b_meta_tags_result.png",
+      "expected": "Meta Tags generate result",
+      "visible": "◇ | AEO / SEO Generator | ① | Wizard | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | GE",
+      "hits": "7/8",
+      "secrets": "none",
+      "fresh": "full flow run",
+      "tester": "PASS"
+    }
+  ],
+  "must_pass_count": "19/19"
+}

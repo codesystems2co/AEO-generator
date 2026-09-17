@@ -1,0 +1,62 @@
+{
+  "googleText": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 2 — GOOGLE SEARCH\n\nRevisamos cómo ve Google tu sitio y corregimos lo que se pueda de forma automática.\n\nURL del sitio\n\n✓ Acceso a Search Console concedido\n\nRevisar y mejorar el sitio\nCompleto\n✓ Página accesible Completo — Correcto\n✓ Título Completo — Arkiphere Home | Arkiphere Cloud\n✓ Descripción Auto-corregido — Falta la descripción\n✓ Encabezado principal Auto-corregido — Falta el encabezado principal\n✓ Archivo robots Completo — Correcto\n✓ Mapa del sitio Completo — Correcto\n✓ Search Console listo Completo — Disponible\n✓ Acceso a Search Console Completo — Acceso concedido\n✓ Señales de tienda Completo — La página habla de productos o compra\n✓ Datos estructurados Auto-corregido — Faltan datos estructurados\n\nTítulo propuesto: Arkiphere Cloud\n\nDescripción: Your cloud hosting solution for a reliable and secure online presence.\n\nEncabezado: Arkiphere Cloud\n\nAtrás\nContinuar",
+  "aeoBefore": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 3 — PACK AEO\n\nOllama genera el pack en forma de árbol. Tema, Negocio y Hechos son los datos de entrada — no hace falta hablar de infraestructura.\n\nTema *\nNegocio\nHechos\nGenerar pack AEO\nAtrás\nContinuar",
+  "controls": [
+    {
+      "i": 0,
+      "tag": "INPUT",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Ej. zapatos de running para ciudad",
+      "value": "",
+      "disabled": false
+    },
+    {
+      "i": 1,
+      "tag": "INPUT",
+      "type": "text",
+      "name": "",
+      "id": "",
+      "placeholder": "Nombre de la tienda",
+      "value": "",
+      "disabled": false
+    },
+    {
+      "i": 2,
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "name": "",
+      "id": "",
+      "placeholder": "Qué vendes, para quién, y qué te diferencia",
+      "value": "",
+      "disabled": false
+    }
+  ],
+  "controlsAfter": [
+    {
+      "i": 0,
+      "tag": "INPUT",
+      "value": "Arkiphere Cloud"
+    },
+    {
+      "i": 1,
+      "tag": "INPUT",
+      "value": "Arkiphere Cloud"
+    },
+    {
+      "i": 2,
+      "tag": "TEXTAREA",
+      "value": "Tienda en línea, prueba gratuita y atención a equipos comerciales."
+    }
+  ],
+  "aeoAfter": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 3 — PACK AEO\n\nOllama genera el pack en forma de árbol. Tema, Negocio y Hechos son los datos de entrada — no hace falta hablar de infraestructura.\n\nTema *\nNegocio\nHechos\nGenerar pack AEO\n\nArkipere Cloud: Solución de Nube para Empresas\n\nA comprehensive guide covering Arkiphere Cloud. Arkiphere Cloud | https://arkiphere.cloud | Tienda en línea, prueba gratuita y atención a equipos comerciales.\n\nAEO\nAEO\nTitle\nArkipere Cloud: Solución de Nube para Empresas\nSummary\nA comprehensive guide covering Arkiphere Cloud. Arkiphere Cloud | https://arkiphere.cloud | Tienda en línea, prueba gratuita y atención a equipos comerciales.\nEntities\nArkiphere, Cloud\nFAQ (5)\n¿Qué es Arkipere Cloud?\nArkipere Cloud es una solución de nube que permite a las empresas almacenar y gestionar sus datos de manera segura y eficiente.\n¿Cuál es el alcance de la prueba gratuita de Arkipere Cloud?\nLa prueba gratuita de Arkipere Cloud incluye un determinado número de GB de almacenamiento y acceso a recursos de la nube durante un período determinado.\n¿Cuál es el costo de Arkipere Cloud?\nEl costo de Arkipere Cloud varía según el plan de suscripción y el nivel de servicio elegido.\n¿Dónde puedo encontrar más información sobre Arkipere Cloud?\nPuedes encontrar más información sobre Arkipere Cloud en su sitio web oficial, https://arkiphere.cloud\n¿Cuál es el alcance de la atención a equipos comerciales de Arkipere Cloud?\nLa atención a equipos comerciales de Arkipere Cloud incluye asistencia técnica, soporte y consultoría para ayudar a las empresas a aprovechar al máximo la solución de nube\nH2 (5)\n¿Qué es Arkipere Cloud?\nCaracterísticas de Arkipere Cloud\nBeneficios de Arkipere Cloud\nCómo funciona Arkipere Cloud\nPreguntas frecuentes sobre Arkipere Cloud\nAtrás\nContinuar",
+  "packOk": true,
+  "aeoError": false,
+  "contEnabled": true,
+  "seo": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 4 — PACK SEO\n\nMismo pack: Ollama arma el árbol SEO (título, descripción, palabras clave y puntuación) a partir de los datos del paso anterior.\n\nTítulo: Arkipere Cloud: Solución de Nube para Empresas\n\nDescripción: Descubre la potencia de Arkipere Cloud, solución de nube para empresas con prueba gratuita y atención a equipos comerciales.\n\n80/100 · B\n\nArkiphere Cloud\nAEO\nTitle\nArkipere Cloud: Solución de Nube para Empresas\nSummary\nA comprehensive guide covering Arkiphere Cloud. Arkiphere Cloud | https://arkiphere.cloud | Tienda en línea, prueba gratuita y atención a equipos comerciales.\nEntities\nArkiphere, Cloud\nFAQ (5)\n¿Qué es Arkipere Cloud?\nArkipere Cloud es una solución de nube que permite a las empresas almacenar y gestionar sus datos de manera segura y eficiente.\n¿Cuál es el alcance de la prueba gratuita de Arkipere Cloud?\nLa prueba gratuita de Arkipere Cloud incluye un determinado número de GB de almacenamiento y acceso a recursos de la nube durante un período determinado.\n¿Cuál es el costo de Arkipere Cloud?\nEl costo de Arkipere Cloud varía según el plan de suscripción y el nivel de servicio elegido.\n¿Dónde puedo encontrar más información sobre Arkipere Cloud?\nPuedes encontrar más información sobre Arkipere Cloud en su sitio web oficial, https://arkiphere.cloud\n¿Cuál es el alcance de la atención a equipos comerciales de Arkipere Cloud?\nLa atención a equipos comerciales de Arkipere Cloud incluye asistencia técnica, soporte y consultoría para ayudar a las empresas a aprovechar al máximo la solución de nube\nH2 (5)\n¿Qué es Arkipere Cloud?\nCaracterísticas de Arkipere Cloud\nBeneficios de Arkipere Cloud\nCómo funciona Arkipere Cloud\nPreguntas frecuentes sobre Arkipere Cloud\nSEO\nTitle tag\nArkipere Cloud: Solución de Nube para Empresas\nMeta description\nDescubre la potencia de Arkipere Cloud, solución de nube para empresas con prueba gratuita y atención a equipos comerciales.\nKeywords\nArkipere Cloud, solución de nube, empresas, prueba gratuita, atención a equipos comerciales\nCanonical\nhttps://arkiphere.cloud\nScore\n80 / 100 (B)\nArkiphere Cloud\n├── AEO\n│   ├── Title — Arkipere Cloud: Solución de Nube para Empresas\n│   ├── Summary — A comprehensive guide covering Arkiphere Cloud. Arkiphere Cloud | https://arkiphere.cloud | Tienda en línea, prueba gratuita y atención a equipos comerciales.\n│   ├── Entities — Arkiphere, Cloud\n│   ├── FAQ (5)\n│   │   ├── ¿Qué es Arkipere Cloud? — Arkipere Cloud es una solución de nube que permite a las empresas almacenar y gestionar sus datos de manera segura y eficiente.\n│   │   ├── ¿Cuál es el alcance de la prueba gratuita de Arkipere Cloud? — La prueba gratuita de Arkipere Cloud incluye un determinado número de GB de almacenamiento y acceso a recursos de la nube durante un período determinado.\n│   │   ├── ¿Cuál es el costo de Arkipere Cloud? — El costo de Arkipere Cloud varía según el plan de suscripción y el nivel de servicio elegido.\n│   │   ├── ¿Dónde puedo encontrar más información sobre Arkipere Cloud? — Puedes encontrar más información sobre Arkipere Cloud en su sitio web oficial, https://arkiphere.cloud\n│   │   └── ¿Cuál es el alcance de la atención a equipos comerciales de Arkipere Cloud? — La atención a equipos comerciales de Arkipere Cloud incluye asistencia técnica, soporte y consultoría para ayudar a las empresas a aprovechar al máximo la solución de nube\n│   └── H2 (5)\n│       ├── ¿Qué es Arkipere Cloud?\n│       ├── Características de Arkipere Cloud\n│       ├── Beneficios de Arkipere Cloud\n│       ├── Cómo funciona Arkipere Cloud\n│       └── Preguntas frecuentes sobre Arkipere Cloud\n└── SEO\n    ├── Title tag — Arkipere Cloud: Solución de Nube para Empresas\n    ├── Meta description — Descubre la potencia de Arkipere Cloud, solución de nube para empresas con prueba gratuita y atención a equipos comerciales.\n    ├── Keywords — Arkipere Cloud, solución de nube, empresas, prueba gratuita, atención a equipos comerciales\n    ├── Canonical — https://arkiphere.cloud\n    └── Score — 80 / 100 (B)\nAtrás\nContinuar",
+  "seoOk": true,
+  "publicarBefore": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 5 — PUBLICAR EN LA TIENDA\n\nPublicamos título y descripción en Odoo (https://arkiphere.cloud) y comprobamos que quedaron guardados.\n\nPublicar y comprobar\nAtrás\nÚltimo paso",
+  "publicar": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por tu tienda, luego Google, el pack AEO/SEO y la publicación.\n\n1\nTienda\n2\nGoogle\n3\nAEO\n4\nSEO\n5\nPublicar\nPASO 5 — PUBLICAR EN LA TIENDA\n\nPublicamos título y descripción en Odoo (https://arkiphere.cloud) y comprobamos que quedaron guardados.\n\nPublicar y comprobar\nNo se publicó\n\nNo se pudo publicar en la tienda ahora. No se simuló un resultado correcto.\n\nOdoo Escritura fallida Comprobación fallida\nNo se pudo publicar: la tienda no está disponible ahora. No se simuló un resultado correcto.\nAtrás\nÚltimo paso",
+  "publicarHonest": true
+}

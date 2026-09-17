@@ -1,4 +1,8 @@
-const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_BASE = import.meta.env.VITE_API_URL || (
+  typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.hostname}:8642`
+    : ''
+)
 
 // User-friendly field name mapping
 const FIELD_LABELS = {
@@ -15,6 +19,8 @@ const FIELD_LABELS = {
   country: 'Country',
   latitude: 'Latitude',
   longitude: 'Longitude',
+  site_url: 'Site URL',
+  json_key: 'Service account JSON',
 }
 
 function formatFieldName(loc) {
@@ -36,12 +42,10 @@ async function request(path, options = {}) {
     let errorMessage = res.statusText
     try {
       errorData = await res.json()
-      // Parse FastAPI validation errors
       if (errorData.detail && Array.isArray(errorData.detail)) {
         errorMessage = errorData.detail
           .map((d) => {
             const field = formatFieldName(d.loc)
-            // Make messages more user-friendly
             let msg = d.msg
             if (d.type === 'string_too_long') {
               msg = `Must be at most ${d.ctx?.max_length} characters`
@@ -54,9 +58,11 @@ async function request(path, options = {}) {
           })
           .join('\n')
       } else if (errorData.detail) {
-        errorMessage = errorData.detail
+        errorMessage = typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail)
       } else if (errorData.message) {
         errorMessage = errorData.message
+      } else if (errorData.error) {
+        errorMessage = errorData.error
       }
     } catch {
       // Response wasn't JSON
@@ -100,6 +106,39 @@ export const api = {
     analyze: (body) => request('/api/geo/analyze', { method: 'POST', body: JSON.stringify(body) }),
     optimize: (body) => request('/api/geo/optimize', { method: 'POST', body: JSON.stringify(body) }),
     citations: (body) => request('/api/geo/citations', { method: 'POST', body: JSON.stringify(body) }),
+  },
+  chat: {
+    send: (body) => request('/api/chat/', { method: 'POST', body: JSON.stringify(body) }),
+    health: () => request('/api/chat/health'),
+  },
+  google: {
+    status: () => request('/api/google/status'),
+    readiness: (body) => request('/api/google/readiness', { method: 'POST', body: JSON.stringify(body) }),
+    oauthStart: () => request('/api/google/oauth/start', { method: 'POST', body: '{}' }),
+    sites: () => request('/api/google/sites'),
+    saSession: (body) => request('/api/google/sa/session', { method: 'POST', body: JSON.stringify(body) }),
+  },
+  packs: {
+    health: () => request('/api/packs/health'),
+    generate: (body) => request('/api/packs/generate', { method: 'POST', body: JSON.stringify(body) }),
+  },
+  connectors: {
+    health: () => request('/api/connectors/health'),
+    platforms: () => request('/api/connectors/platforms'),
+    write: (body) => request('/api/connectors/write', { method: 'POST', body: JSON.stringify(body) }),
+    verify: (body) => request('/api/connectors/verify', { method: 'POST', body: JSON.stringify(body) }),
+  },
+  wizard: {
+    status: () => request('/api/wizard/status'),
+    run: (body) => request('/api/wizard/run', { method: 'POST', body: JSON.stringify(body) }),
+    autofix: (body) => request('/api/wizard/google/autofix', { method: 'POST', body: JSON.stringify(body) }),
+    injectVerify: (body) => request('/api/wizard/inject-verify', { method: 'POST', body: JSON.stringify(body) }),
+  },
+  entitlement: {
+    consume: (key, github_login) => request('/api/entitlement/consume', {
+      method: 'POST',
+      body: JSON.stringify({ key: key || '', github_login: github_login || undefined }),
+    }),
   },
   health: () => request('/health'),
 }

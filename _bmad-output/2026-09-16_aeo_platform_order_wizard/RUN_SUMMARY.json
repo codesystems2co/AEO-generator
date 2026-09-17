@@ -1,0 +1,39 @@
+{
+  "gate": "aeo_platform_order_wizard",
+  "date": "2026-09-16",
+  "finished_pt": "2026-09-16 14:21 CEST",
+  "finished_utc": "2026-09-16T12:21:11Z",
+  "global": "PASS",
+  "checks": {
+    "1_invalid_blocked": "PASS",
+    "2_confirmed_s00245_wizard_google_first": "PASS",
+    "3_entitlement_consume_arkiphere_proxy": "PASS",
+    "4_aeo_base_shop_untouched_ports_up": "PASS"
+  },
+  "key_recovered_for_live_allowed": true,
+  "key_redacted": "AEO-EyXd…Aa0A",
+  "order": "S00245",
+  "product": 109,
+  "site": "https://www.example.com",
+  "ui": "http://2.28.106.22:9012/",
+  "api_lb": "http://2.28.106.22:8642/",
+  "ports": {"9012": 200, "8642": 200},
+  "md5": {
+    "01-license-invalid-blocked.png": "bef29765a0fd4fcddb72390ac8f42f4d",
+    "02-license-allowed-begin.png": "caf73355b4d042e9c225a472f4e98616",
+    "03-wizard-google-first.png": "ae40872af7c4e1731acda82aab88afbf",
+    "live-01-invalid-blocked.png": "2c8cf1480bce6064780489325f22af51",
+    "live-02-allowed-begin.png": "ef36815c128dd046e3ab7dd5b83f7f09",
+    "live-03-wizard-google-first.png": "ef36815c128dd046e3ab7dd5b83f7f09"
+  },
+  "paths": {
+    "mac_evidence": "/Users/codesystemsco/Documents/GROK BOT/projects/aeo-platform/qa/evidence/2026-09-16_aeo_platform_order_wizard",
+    "mac_bmad": "/Users/codesystemsco/Documents/GROK BOT/projects/aeo-platform/_bmad-output/2026-09-16_aeo_platform_order_wizard",
+    "remote_generator": "/root/anyapp-github-build/AEO-generator/_bmad-output/2026-09-16_aeo_platform_order_wizard/"
+  },
+  "notes": [
+    "Live allowed auto-entered wizard after consume (Pedido S00245 Google first).",
+    "Shot 02 supplies Comenzar-enabled gate card evidence.",
+    "ARKIPHERE_CE aeo_dev has no sale/product tables; shop verify via live Arkiphere consume proxy."
+  ]
+}

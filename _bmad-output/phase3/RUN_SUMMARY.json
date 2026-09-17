@@ -1,0 +1,139 @@
+{
+  "when": "2026-09-15T22:25:55+0200",
+  "global": "PASS",
+  "ui": "http://2.28.106.22:9012",
+  "steps": [
+    {
+      "step": "api_wizard_status",
+      "result": "PASS",
+      "detail": "ollama ok / core down expected"
+    },
+    {
+      "step": "api_inject_honest_fail",
+      "result": "PASS",
+      "detail": "injected:false Core unreachable (target string schema)"
+    },
+    {
+      "step": "shot_01-wizard-only.png",
+      "result": "PASS",
+      "detail": "Default wizard-only, no primary tab bar hits=4"
+    },
+    {
+      "step": "continuar_atras_gated_initial",
+      "result": "PASS",
+      "detail": "continuar_enabled=False atras_enabled=False"
+    },
+    {
+      "step": "shot_02-herramientas.png",
+      "result": "PASS",
+      "detail": "Herramientas shows advanced tabs hits=5"
+    },
+    {
+      "step": "shot_03-google-autofix.png",
+      "result": "PASS",
+      "detail": "Google autofix + Paso completo hits=5"
+    },
+    {
+      "step": "continuar_enabled_after_google",
+      "result": "PASS",
+      "detail": "enabled=True"
+    },
+    {
+      "step": "reached_aeo_step",
+      "result": "PASS",
+      "detail": "◇\nAEO / SEO Generator\nAsistente\nHerramientas\nPAQUETE ARKIPHERE — GOOGLE SEARCH → AEO → SEO → INYECTAR\n\nContinuar se habilita solo cuando el paso actual está completo. La inyección real pasa por Core :"
+    },
+    {
+      "step": "shot_03b-atras-from-aeo.png",
+      "result": "PASS",
+      "detail": "Atrás to Google keeps autofix / Paso completo hits=5"
+    },
+    {
+      "step": "03_vs_03b_distinct",
+      "result": "PASS",
+      "detail": "md5_03=7251356b191a6c3245ec7de58c5dc593 md5_03b=cf5fa0ebbbffb7788559fa446b08f982"
+    },
+    {
+      "step": "shot_04-aeo-pack.png",
+      "result": "PASS",
+      "detail": "AEO pack + tree via Continuar path hits=5"
+    },
+    {
+      "step": "shot_05-seo-pack.png",
+      "result": "PASS",
+      "detail": "SEO pack in wizard shell (not primary tab) hits=6"
+    },
+    {
+      "step": "seo_not_primary_tab_chrome",
+      "result": "PASS",
+      "detail": "wizard shell"
+    },
+    {
+      "step": "shot_06-inject-fail.png",
+      "result": "PASS",
+      "detail": "Inject FAIL honest Core unreachable hits=7"
+    },
+    {
+      "step": "inject_not_fake_success",
+      "result": "PASS",
+      "detail": "◇\nAEO / SEO Generator\nAsistente\nHerramientas\nPAQUETE ARKIPHERE — GOOGLE SEARCH → AEO → SEO → INYECTAR\n\nContinuar se habilita solo cuando el paso actual está completo. La inyección real pasa por Core :"
+    }
+  ],
+  "screen_review": [
+    {
+      "file": "01-wizard-only.png",
+      "expected": "Default wizard-only, no primary tab bar",
+      "visible": "◇ | AEO / SEO Generator | Asistente | Herramientas | PAQUETE ARKIPHERE — GOOGLE SEARCH → AEO → SEO → INYECTAR |  | Continuar se habilita solo cuando el paso actual está completo. La inyección real pasa por Core :18642. |  | 1 | Google Sea",
+      "hits": "4/5",
+      "tester": "PASS"
+    },
+    {
+      "file": "02-herramientas.png",
+      "expected": "Herramientas shows advanced tabs",
+      "visible": "◇ | AEO / SEO Generator | Asistente | Ocultar herramientas | G | Google Search | ☰ | Ollama Packs | ⇄ | Connectors | 💬 | Chat IA | 📖 | Guide | ◇ | Meta Tags | ◆ | Keywords | ▣ | Content Analysis | ◈ | AEO Suggest | ★ | SEO Score | ◉ | NLP | 🔗 | URL Analyze | ⊕ | External SEO | 🤖 | ",
+      "hits": "5/5",
+      "tester": "PASS"
+    },
+    {
+      "file": "03-google-autofix.png",
+      "expected": "Google autofix + Paso completo",
+      "visible": "◇ | AEO / SEO Generator | Asistente | Herramientas | PAQUETE ARKIPHERE — GOOGLE SEARCH → AEO → SEO → INYECTAR |  | Continuar se habilita solo cuando el paso actual está completo. La inyección real pasa por Core :18642. |  | 1 | Google Sea",
+      "hits": "5/5",
+      "tester": "PASS"
+    },
+    {
+      "file": "03b-atras-from-aeo.png",
+      "expected": "Atrás to Google keeps autofix / Paso completo",
+      "visible": "◇ | AEO / SEO Generator | Asistente | Herramientas | PAQUETE ARKIPHERE — GOOGLE SEARCH → AEO → SEO → INYECTAR |  | Continuar se habilita solo cuando el paso actual está completo. La inyección real pasa por Core :18642. |  | 1 | Google Sea",
+      "hits": "5/5",
+      "tester": "PASS"
+    },
+    {
+      "file": "04-aeo-pack.png",
+      "expected": "AEO pack + tree via Continuar path",
+      "visible": "◇ | AEO / SEO Generator | Asistente | Herramientas | PAQUETE ARKIPHERE — GOOGLE SEARCH → AEO → SEO → INYECTAR |  | Continuar se habilita solo cuando el paso actual está completo. La inyección real pasa por Core :18642. |  | 1 | Google Sea",
+      "hits": "5/5",
+      "tester": "PASS"
+    },
+    {
+      "file": "05-seo-pack.png",
+      "expected": "SEO pack in wizard shell (not primary tab)",
+      "visible": "◇ | AEO / SEO Generator | Asistente | Herramientas | PAQUETE ARKIPHERE — GOOGLE SEARCH → AEO → SEO → INYECTAR |  | Continuar se habilita solo cuando el paso actual está completo. La inyección real pasa por Core :18642. |  | 1 | Google Sea",
+      "hits": "6/6",
+      "tester": "PASS"
+    },
+    {
+      "file": "06-inject-fail.png",
+      "expected": "Inject FAIL honest Core unreachable",
+      "visible": "◇ | AEO / SEO Generator | Asistente | Herramientas | PAQUETE ARKIPHERE — GOOGLE SEARCH → AEO → SEO → INYECTAR |  | Continuar se habilita solo cuando el paso actual está completo. La inyección real pasa por Core :18642. |  | 1 | Google Sea",
+      "hits": "7/7",
+      "tester": "PASS"
+    }
+  ],
+  "03_03b_distinct": "PASS",
+  "03_03b_md5": {
+    "03": "7251356b191a6c3245ec7de58c5dc593",
+    "03b": "cf5fa0ebbbffb7788559fa446b08f982",
+    "distinct": true
+  }
+}

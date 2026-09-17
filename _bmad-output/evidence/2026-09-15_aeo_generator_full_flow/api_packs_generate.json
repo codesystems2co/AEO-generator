@@ -1,0 +1,204 @@
+{
+  "http": 200,
+  "body": {
+    "ok": true,
+    "topic": "Arkiphere Cloud",
+    "url": "https://arkiphere.cloud",
+    "business_name": "Arkiphere Cloud",
+    "backend": "ollama",
+    "model": "llama3.2:3b",
+    "ollama": {
+      "status": "ok",
+      "ollama": "http://172.17.0.1:11435",
+      "model": "llama3.2:3b",
+      "models": [
+        "llama3.2:3b"
+      ]
+    },
+    "tree": [
+      {
+        "label": "AEO",
+        "children": [
+          {
+            "label": "Title",
+            "value": "Arkiphere Cloud: Nube de Servicio de Almacenamiento en la Nube"
+          },
+          {
+            "label": "Summary",
+            "value": "Arkiphere Cloud es una nube de servicio de almacenamiento en la nube que ofrece almacenamiento seguro y escalable para empresas de todo el mundo"
+          },
+          {
+            "label": "Entities",
+            "value": "Arkiphere, Cloud"
+          },
+          {
+            "label": "FAQ (9)",
+            "children": [
+              {
+                "label": "¿Qué es Arkiphere Cloud?",
+                "value": "Arkiphere Cloud es una nube de servicio de almacenamiento en la nube que ofrece almacenamiento seguro y escalable para empresas de todo el mundo."
+              },
+              {
+                "label": "¿Dónde se encuentra Arkiphere Cloud?",
+                "value": "Arkiphere Cloud se encuentra en Europa, con centros de datos en diferentes países de la Unión Europea."
+              },
+              {
+                "label": "¿Cuál es el alcance de Arkiphere Cloud?",
+                "value": "Arkiphere Cloud ofrece almacenamiento en la nube para empresas de todo el mundo, con soporte en diferentes idiomas y monedas."
+              },
+              {
+                "label": "¿Es seguro Arkiphere Cloud?",
+                "value": "Sí, Arkiphere Cloud ofrece almacenamiento seguro y protegido por medidas de seguridad avanzadas, incluyendo cifrado de datos y autenticación de dos factores."
+              },
+              {
+                "label": "¿Puedo escalar mi almacenamiento en Arkiphere Cloud?",
+                "value": "Sí, Arkiphere Cloud ofrece escalabilidad y flexibilidad para adaptarse a las necesidades de tu empresa, con opciones de pago por uso y planos personalizados."
+              },
+              {
+                "label": "¿Qué tipo de soporte ofrece Arkiphere Cloud?",
+                "value": "Arkiphere Cloud ofrece soporte técnico 24/7, con respuesta rápida a preguntas y problemas, y capacitación y documentación para ayudarte a aprovechar al máximo tus recursos."
+              },
+              {
+                "label": "¿Qué dicen los clientes de Arkiphere Cloud?",
+                "value": "Arkiphere Cloud ha recibido críticas positivas de clientes que han valorado su seguridad, escalabilidad y soporte técnico."
+              },
+              {
+                "label": "¿Cómo puedo probar Arkiphere Cloud?",
+                "value": "Puedes probar Arkiphere Cloud con una cuenta gratuita o con un plan de prueba, y explorar nuestras características y beneficios."
+              },
+              {
+                "label": "¿Dónde puedo encontrar más información sobre Arkiphere Cloud?",
+                "value": "Puedes encontrar más información sobre Arkiphere Cloud en nuestro sitio web oficial, https://arkiphere.cloud"
+              }
+            ]
+          },
+          {
+            "label": "H2 (5)",
+            "children": [
+              {
+                "label": "Introducción a Arkiphere Cloud"
+              },
+              {
+                "label": "Características y beneficios"
+              },
+              {
+                "label": "Planos y precios"
+              },
+              {
+                "label": "Seguridad y escalabilidad"
+              },
+              {
+                "label": "Testimonios y casos de éxito"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "SEO",
+        "children": [
+          {
+            "label": "Title tag",
+            "value": "Arkiphere Cloud: Nube de Servicio de Almacenamiento en la Nube"
+          },
+          {
+            "label": "Meta description",
+            "value": "Arkiphere Cloud es una nube de servicio de almacenamiento en la nube que ofrece almacenamiento seguro y escalable para empresas de todo el mundo"
+          },
+          {
+            "label": "Keywords",
+            "value": "almacenamiento en la nube, nube de servicio, almacenamiento seguro, escalabilidad, empresas"
+          },
+          {
+            "label": "Canonical",
+            "value": "https://arkiphere.cloud"
+          },
+          {
+            "label": "Score",
+            "value": "75 / 100 (C)"
+          }
+        ]
+      }
+    ],
+    "resume": "Arkiphere Cloud\n├── AEO\n│   ├── Title — Arkiphere Cloud: Nube de Servicio de Almacenamiento en la Nube\n│   ├── Summary — Arkiphere Cloud es una nube de servicio de almacenamiento en la nube que ofrece almacenamiento seguro y escalable para empresas de todo el mundo\n│   ├── Entities — Arkiphere, Cloud\n│   ├── FAQ (9)\n│   │   ├── ¿Qué es Arkiphere Cloud? — Arkiphere Cloud es una nube de servicio de almacenamiento en la nube que ofrece almacenamiento seguro y escalable para empresas de todo el mundo.\n│   │   ├── ¿Dónde se encuentra Arkiphere Cloud? — Arkiphere Cloud se encuentra en Europa, con centros de datos en diferentes países de la Unión Europea.\n│   │   ├── ¿Cuál es el alcance de Arkiphere Cloud? — Arkiphere Cloud ofrece almacenamiento en la nube para empresas de todo el mundo, con soporte en diferentes idiomas y monedas.\n│   │   ├── ¿Es seguro Arkiphere Cloud? — Sí, Arkiphere Cloud ofrece almacenamiento seguro y protegido por medidas de seguridad avanzadas, incluyendo cifrado de datos y autenticación de dos factores.\n│   │   ├── ¿Puedo escalar mi almacenamiento en Arkiphere Cloud? — Sí, Arkiphere Cloud ofrece escalabilidad y flexibilidad para adaptarse a las necesidades de tu empresa, con opciones de pago por uso y planos personalizados.\n│   │   ├── ¿Qué tipo de soporte ofrece Arkiphere Cloud? — Arkiphere Cloud ofrece soporte técnico 24/7, con respuesta rápida a preguntas y problemas, y capacitación y documentación para ayudarte a aprovechar al máximo tus recursos.\n│   │   ├── ¿Qué dicen los clientes de Arkiphere Cloud? — Arkiphere Cloud ha recibido críticas positivas de clientes que han valorado su seguridad, escalabilidad y soporte técnico.\n│   │   ├── ¿Cómo puedo probar Arkiphere Cloud? — Puedes probar Arkiphere Cloud con una cuenta gratuita o con un plan de prueba, y explorar nuestras características y beneficios.\n│   │   └── ¿Dónde puedo encontrar más información sobre Arkiphere Cloud? — Puedes encontrar más información sobre Arkiphere Cloud en nuestro sitio web oficial, https://arkiphere.cloud\n│   └── H2 (5)\n│       ├── Introducción a Arkiphere Cloud\n│       ├── Características y beneficios\n│       ├── Planos y precios\n│       ├── Seguridad y escalabilidad\n│       └── Testimonios y casos de éxito\n└── SEO\n    ├── Title tag — Arkiphere Cloud: Nube de Servicio de Almacenamiento en la Nube\n    ├── Meta description — Arkiphere Cloud es una nube de servicio de almacenamiento en la nube que ofrece almacenamiento seguro y escalable para empresas de todo el mundo\n    ├── Keywords — almacenamiento en la nube, nube de servicio, almacenamiento seguro, escalabilidad, empresas\n    ├── Canonical — https://arkiphere.cloud\n    └── Score — 75 / 100 (C)",
+    "aeo": {
+      "suggested_title": "Arkiphere Cloud: Nube de Servicio de Almacenamiento en la Nube",
+      "summary": "Arkiphere Cloud es una nube de servicio de almacenamiento en la nube que ofrece almacenamiento seguro y escalable para empresas de todo el mundo",
+      "key_entities": [
+        "Arkiphere",
+        "Cloud"
+      ],
+      "questions_answers": [
+        {
+          "question": "¿Qué es Arkiphere Cloud?",
+          "answer": "Arkiphere Cloud es una nube de servicio de almacenamiento en la nube que ofrece almacenamiento seguro y escalable para empresas de todo el mundo."
+        },
+        {
+          "question": "¿Dónde se encuentra Arkiphere Cloud?",
+          "answer": "Arkiphere Cloud se encuentra en Europa, con centros de datos en diferentes países de la Unión Europea."
+        },
+        {
+          "question": "¿Cuál es el alcance de Arkiphere Cloud?",
+          "answer": "Arkiphere Cloud ofrece almacenamiento en la nube para empresas de todo el mundo, con soporte en diferentes idiomas y monedas."
+        },
+        {
+          "question": "¿Es seguro Arkiphere Cloud?",
+          "answer": "Sí, Arkiphere Cloud ofrece almacenamiento seguro y protegido por medidas de seguridad avanzadas, incluyendo cifrado de datos y autenticación de dos factores."
+        },
+        {
+          "question": "¿Puedo escalar mi almacenamiento en Arkiphere Cloud?",
+          "answer": "Sí, Arkiphere Cloud ofrece escalabilidad y flexibilidad para adaptarse a las necesidades de tu empresa, con opciones de pago por uso y planos personalizados."
+        },
+        {
+          "question": "¿Qué tipo de soporte ofrece Arkiphere Cloud?",
+          "answer": "Arkiphere Cloud ofrece soporte técnico 24/7, con respuesta rápida a preguntas y problemas, y capacitación y documentación para ayudarte a aprovechar al máximo tus recursos."
+        },
+        {
+          "question": "¿Qué dicen los clientes de Arkiphere Cloud?",
+          "answer": "Arkiphere Cloud ha recibido críticas positivas de clientes que han valorado su seguridad, escalabilidad y soporte técnico."
+        },
+        {
+          "question": "¿Cómo puedo probar Arkiphere Cloud?",
+          "answer": "Puedes probar Arkiphere Cloud con una cuenta gratuita o con un plan de prueba, y explorar nuestras características y beneficios."
+        },
+        {
+          "question": "¿Dónde puedo encontrar más información sobre Arkiphere Cloud?",
+          "answer": "Puedes encontrar más información sobre Arkiphere Cloud en nuestro sitio web oficial, https://arkiphere.cloud"
+        }
+      ],
+      "structured_sections": [
+        "Introducción a Arkiphere Cloud",
+        "Características y beneficios",
+        "Planos y precios",
+        "Seguridad y escalabilidad",
+        "Testimonios y casos de éxito"
+      ],
+      "tips": [
+        "Para aprovechar al máximo tus recursos en Arkiphere Cloud, asegúrate de leer las condiciones de uso y política de privacidad de nuestro sitio web."
+      ]
+    },
+    "seo": {
+      "title": "Arkiphere Cloud: Nube de Servicio de Almacenamiento en la Nube",
+      "meta_description": "Arkiphere Cloud es una nube de servicio de almacenamiento en la nube que ofrece almacenamiento seguro y escalable para empresas de todo el mundo",
+      "keywords": [
+        "almacenamiento en la nube",
+        "nube de servicio",
+        "almacenamiento seguro",
+        "escalabilidad",
+        "empresas"
+      ],
+      "canonical": "https://arkiphere.cloud",
+      "html_tags": {
+        "title_tag": "<title>Arkiphere Cloud: Nube de Servicio de Almacenamiento en la Nube</title>",
+        "meta_description": "<meta name=\"description\" content=\"Arkiphere Cloud es una nube de servicio de almacenamiento en la nube que ofrece almacenamiento seguro y escalable para empresas de todo el mundo\">",
+        "og_tags": {
+          "og:title": "Arkiphere Cloud: Nube de Servicio de Almacenamiento en la Nube",
+          "og:description": "Arkiphere Cloud es una nube de servicio de almacenamiento en la nube que ofrece almacenamiento seguro y escalable para empresas de todo el mundo",
+          "og:type": "website",
+          "og:url": "https://arkiphere.cloud",
+          "og:site_name": "Arkiphere Cloud: Nube de Servicio de Almacenamiento en la Nube"
+        },
+        "twitter_card": {
+          "twitter:card": "summary_large_image",
+          "twitter:title": "Arkiphere Cloud: Nube de Servicio de Almacenamiento en la Nube",
+          "twitter:description": "Arkiphere Clou

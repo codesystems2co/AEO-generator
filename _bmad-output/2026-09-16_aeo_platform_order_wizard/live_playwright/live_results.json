@@ -1,0 +1,34 @@
+[
+  {
+    "check": "1",
+    "sinPedido": true,
+    "comenzar": {
+      "found": true,
+      "text": "Comenzar asistente",
+      "disabled": true,
+      "looksDisabled": true,
+      "tag": "BUTTON",
+      "className": "btn"
+    },
+    "hasInvalid": false
+  },
+  {
+    "check": "2a",
+    "pedidoBadge": true,
+    "confirmedMsg": false,
+    "sinPedido": false,
+    "comenzar": {
+      "found": false
+    },
+    "bodySnippet": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por Google Search, luego el pack AEO y el pack SEO.\n\nPedido S00245\n1\nGoogle\n2\nAEO\n3\nSEO\nPASO 1 — GOOGLE SEARCH\n\nRevisamos cómo ve Google tu sitio y corregimos lo que se pueda de forma automática.\n\nURL del sitio\nRevisar y mejorar el sitio\nAtrás\nContinuar"
+  },
+  {
+    "check": "2b",
+    "clicked": false,
+    "googleFirst": true,
+    "orderGoogleAeoSeo": true,
+    "badge3": true,
+    "stepOrderHint": true,
+    "bodySnippet": "Search Engine Optimizator\nAsistente\nHerramientas\nASISTENTE DE OPTIMIZACIÓN\n\nCompleta cada paso para habilitar Continuar. Empezamos por Google Search, luego el pack AEO y el pack SEO.\n\nPedido S00245\n1\nGoogle\n2\nAEO\n3\nSEO\nPASO 1 — GOOGLE SEARCH\n\nRevisamos cómo ve Google tu sitio y corregimos lo que se pueda de forma automática.\n\nURL del sitio\nRevisar y mejorar el sitio\nAtrás\nContinuar"
+  }
+]

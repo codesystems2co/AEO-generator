@@ -1,0 +1,7 @@
+READY
+
+Date: 2026-09-15
+Live UI: http://2.28.106.22:9012/
+API: http://2.28.106.22:8642/docs
+Wizard-only default. Herramientas hatch. Continuar gated. Ollama autofix. Inject FAIL = Core :18642 down (not faked).
+No new aeo-platform/ui HTML pages were created.

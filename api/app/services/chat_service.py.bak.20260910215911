@@ -1,0 +1,188 @@
+"""Spanish AEO coach chat backed by Ollama, with optional local AEO suggestions."""
+from __future__ import annotations
+
+import asyncio
+from typing import Any, Dict, List, Optional
+
+import httpx
+
+from app.config import settings
+from app.schemas import AEORequest
+from app.services.aeo_service import generate_aeo_suggestions
+
+SYSTEM_PROMPT = (
+    'Eres un consultor AEO/SEO/GEO en español. Habla claro y breve. '
+    'Haz solo 1–2 preguntas cortas cada vez. Cuando tengas contexto suficiente, '
+    'propón: título, meta description, keywords, esquema H2 y 3 FAQ (pregunta+respuesta). '
+    'Si el negocio es Arkiphere Cloud / AnyApp PaaS, menciona despliegue Odoo con Docker, '
+    'prueba gratuita y planes Community/Enterprise cuando encaje. '
+    'Modelo pequeño: respuestas concretas y cortas, sin relleno.'
+)
+
+SUGGESTIONS_SOFT_TIMEOUT_SEC = 8.0
+
+
+def _derive_topic(messages: List[Dict[str, str]], business_name: Optional[str], url: Optional[str]) -> str:
+    if business_name and business_name.strip():
+        return business_name.strip()
+    for m in reversed(messages or []):
+        if m.get('role') == 'user' and (m.get('content') or '').strip():
+            text = m['content'].strip()
+            if len(text) <= 80:
+                return text
+            return text[:80]
+    if url:
+        return url
+    return 'negocio local'
+
+
+def _should_attach_suggestions(reply: str, messages: List[Dict[str, str]]) -> bool:
+    user_turns = sum(1 for m in messages if m.get('role') == 'user')
+    markers = ('título', 'meta', 'keyword', 'h2', 'faq', 'esquema', 'propuesta')
+    low = (reply or '').lower()
+    if any(k in low for k in markers):
+        return True
+    return user_turns >= 2
+
+
+async def _ollama_chat(messages: List[Dict[str, str]], locale: str = 'es') -> str:
+    base = settings.OLLAMA_BASE_URL.rstrip('/')
+    model = settings.OLLAMA_MODEL
+    sys = SYSTEM_PROMPT
+    if locale and locale.lower().startswith('en'):
+        sys = (
+            'You are a concise AEO/SEO/GEO consultant. Ask 1–2 short questions at a time. '
+            'Then propose title, meta, keywords, H2 outline and 3 FAQ. '
+            'For Arkiphere Cloud / AnyApp PaaS mention Odoo Docker deploy, free trial, Community/Enterprise.'
+        )
+
+    ollama_messages = [{'role': 'system', 'content': sys}]
+    for m in messages:
+        role = m.get('role') or 'user'
+        if role not in ('user', 'assistant', 'system'):
+            role = 'user'
+        content = (m.get('content') or '').strip()
+        if content:
+            ollama_messages.append({'role': role, 'content': content})
+
+    ollama_options = {'num_predict': 200}
+    timeout = httpx.Timeout(90.0, connect=10.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        try:
+            r = await client.post(
+                f'{base}/api/chat',
+                json={
+                    'model': model,
+                    'messages': ollama_messages,
+                    'stream': False,
+                    'options': ollama_options,
+                },
+            )
+            r.raise_for_status()
+            data = r.json()
+            msg = data.get('message') or {}
+            content = msg.get('content') or data.get('response') or ''
+            if content.strip():
+                return content.strip()
+        except Exception:
+            pass
+
+        prompt_parts = [sys, '']
+        for m in ollama_messages[1:]:
+            prompt_parts.append(f"{m['role'].upper()}: {m['content']}")
+        prompt_parts.append('ASSISTANT:')
+        prompt = chr(10).join(prompt_parts)
+        r = await client.post(
+            f'{base}/api/generate',
+            json={
+                'model': model,
+                'prompt': prompt,
+                'stream': False,
+                'options': ollama_options,
+            },
+        )
+        r.raise_for_status()
+        data = r.json()
+        return (data.get('response') or '').strip()
+
+
+async def check_ollama_health() -> Dict[str, Any]:
+    base = settings.OLLAMA_BASE_URL.rstrip('/')
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            r = await client.get(f'{base}/api/tags')
+            r.raise_for_status()
+            data = r.json()
+            models = [m.get('name') for m in data.get('models', []) if m.get('name')]
+            return {
+                'status': 'ok',
+                'ollama': base,
+                'model': settings.OLLAMA_MODEL,
+                'models': models,
+            }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'ollama': base,
+            'model': settings.OLLAMA_MODEL,
+            'error': str(e)[:200],
+        }
+
+
+async def _suggestions_with_soft_timeout(
+    topic: str,
+    business_name: Optional[str],
+    url: Optional[str],
+) -> Optional[Dict[str, Any]]:
+    """Best-effort AEO suggestions; never block the chat reply for long."""
+
+    def _run():
+        aeo = generate_aeo_suggestions(
+            AEORequest(
+                topic=topic,
+                context=url or business_name,
+                include_qa=True,
+                include_entities=True,
+            )
+        )
+        return aeo.model_dump()
+
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(_run),
+            timeout=SUGGESTIONS_SOFT_TIMEOUT_SEC,
+        )
+    except Exception:
+        return None
+
+
+async def chat(
+    messages: List[Dict[str, str]],
+    business_name: Optional[str] = None,
+    url: Optional[str] = None,
+    locale: Optional[str] = 'es',
+) -> Dict[str, Any]:
+    msgs = [dict(m) for m in (messages or [])]
+    if msgs and (business_name or url):
+        extra = []
+        if business_name:
+            extra.append(f'Negocio: {business_name}')
+        if url:
+            extra.append(f'URL: {url}')
+        hint = ' | '.join(extra)
+        for i in range(len(msgs) - 1, -1, -1):
+            if msgs[i].get('role') == 'user':
+                base_c = msgs[i].get('content', '')
+                msgs[i] = {**msgs[i], 'content': f'{base_c}\n({hint})'.strip()}
+                break
+
+    reply = await _ollama_chat(msgs, locale=locale or 'es')
+    result: Dict[str, Any] = {'reply': reply}
+
+    if _should_attach_suggestions(reply, msgs):
+        topic = _derive_topic(msgs, business_name, url)
+        suggestions = await _suggestions_with_soft_timeout(topic, business_name, url)
+        if suggestions is not None:
+            result['suggestions'] = suggestions
+
+    return result

@@ -1,0 +1,14 @@
+READY_A — 2026-09-16
+
+Host: aeo_generator only. Section B (arkiphere_ce / aeo_base) not started.
+
+Live :9012 has no Asistente / Herramientas tabs, menus, or hatch.
+Header is logo + Search Engine Optimizator only. Wizard-only shell.
+
+license+site consume still works (S00245 / product 109).
+
+Open:
+- blocked: http://2.28.106.22:9012/
+- unlocked: http://2.28.106.22:9012/?license=AEO-…&site=https%3A%2F%2Fwww.example.com
+
+Shots: screenshots/01-no-asistente-herramientas.png , screenshots/02-license-wizard.png

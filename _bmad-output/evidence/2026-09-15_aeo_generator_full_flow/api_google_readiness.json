@@ -1,0 +1,75 @@
+{
+  "ok": true,
+  "ready": true,
+  "site_url": "https://arkiphere.cloud",
+  "origin": "https://arkiphere.cloud",
+  "mode": "unset",
+  "auth": {
+    "mode": "unset",
+    "modes": {
+      "oauth": {
+        "configured": false,
+        "connected": false,
+        "client_id_set": false,
+        "redirect_uri": "http://2.28.106.22:8642/api/google/oauth/callback"
+      },
+      "service_account": {
+        "configured": false,
+        "valid_json": false,
+        "client_email": null,
+        "session_override": false
+      }
+    },
+    "gsc_site_url": null,
+    "frontend_url": "http://2.28.106.22:9012",
+    "hint": "OAuth: set GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET, then client consent. Service Account: set GOOGLE_SA_JSON or GOOGLE_SA_FILE (JSON key) and share the GSC property."
+  },
+  "passed": 4,
+  "total": 7,
+  "checks": [
+    {
+      "name": "Live URL fetch",
+      "passed": true,
+      "message": "HTTP 200",
+      "detail": "Arkiphere Home | Arkiphere Cloud"
+    },
+    {
+      "name": "Title tag",
+      "passed": true,
+      "message": "Arkiphere Home | Arkiphere Cloud"
+    },
+    {
+      "name": "Meta description",
+      "passed": false,
+      "message": "Missing meta description"
+    },
+    {
+      "name": "H1 present",
+      "passed": false,
+      "message": "0 H1 tag(s)"
+    },
+    {
+      "name": "robots.txt",
+      "passed": true,
+      "message": "HTTP 200"
+    },
+    {
+      "name": "sitemap.xml",
+      "passed": true,
+      "message": "HTTP 200"
+    },
+    {
+      "name": "Auth mode selected",
+      "passed": false,
+      "message": "Choose OAuth (client consent) or Service Account. Public crawl checks still run."
+    }
+  ],
+  "page": {
+    "title": "Arkiphere Home | Arkiphere Cloud",
+    "meta_description": null,
+    "h1_list": [],
+    "word_count": 499,
+    "status_code": 200
+  },
+  "next": "Continue to AEO pack generation."
+}
