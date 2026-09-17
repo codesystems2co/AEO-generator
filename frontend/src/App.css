@@ -1,5 +1,5 @@
 .app-content {
-  padding: 1.5rem 2rem 5.5rem;
+  padding: 1.5rem 2rem 7.5rem;
   max-width: 960px;
   width: 100%;
   margin: 0 auto;
@@ -329,4 +329,47 @@ a.btn-secondary {
 .stepper li button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.platform-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.7rem;
+  margin: 0.35rem 0 1.1rem;
+}
+
+.platform-card {
+  text-align: left;
+  padding: 0.9rem 0.95rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-height: 132px;
+}
+
+.platform-card span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.platform-card:hover {
+  border-color: var(--accent-dim);
+}
+
+.platform-card.active {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.platform-mark {
+  width: 40px;
+  height: 40px;
+  display: block;
+  margin-bottom: 0.2rem;
 }

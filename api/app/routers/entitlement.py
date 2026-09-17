@@ -27,6 +27,7 @@ class EntitlementRevoke(BaseModel):
 class EntitlementConsume(BaseModel):
     key: Optional[str] = None
     github_login: Optional[str] = None
+    site: Optional[str] = None
 
 
 @router.get("/check")
@@ -55,10 +56,14 @@ async def entitlement_revoke(body: EntitlementRevoke):
 
 
 @router.get("/consume")
-async def entitlement_consume_get(key: Optional[str] = None, github_login: Optional[str] = None):
-    return entitlement.consume(key, github_login)
+async def entitlement_consume_get(
+    key: Optional[str] = None,
+    github_login: Optional[str] = None,
+    site: Optional[str] = None,
+):
+    return entitlement.consume(key, github_login, site=site)
 
 
 @router.post("/consume")
 async def entitlement_consume_post(body: EntitlementConsume):
-    return entitlement.consume(body.key, body.github_login)
+    return entitlement.consume(body.key, body.github_login, site=body.site)

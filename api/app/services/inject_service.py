@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from app.services.core_client import PLATFORMS, probe_core, verify_seo, write_seo
+from app.services.odoo_inject import inject_website_seo
 
 
 def _surface_result(platform: str, write: Dict[str, Any], verify: Optional[Dict[str, Any]], core_up: bool) -> Dict[str, Any]:
@@ -80,6 +81,41 @@ async def inject_and_verify(
         surfaces.append(_surface_result(platform, write, verify, core_up))
 
     overall = core_up and all(s["ok"] for s in surfaces)
+    if not overall:
+        odoo_conn = connections.get("odoo") or {}
+        if odoo_conn.get("api_key") and odoo_conn.get("url"):
+            direct = inject_website_seo(odoo_conn, seo, target)
+            surfaces = [
+                {
+                    "platform": "odoo",
+                    "write": "PASS" if direct.get("ok") else "FAIL",
+                    "verify": "PASS" if direct.get("ok") else "FAIL",
+                    "ok": bool(direct.get("ok")),
+                    "reason": None if direct.get("ok") else direct.get("message"),
+                    "customer_reason": None if direct.get("ok") else "No se pudieron guardar los cambios en Odoo.",
+                    "write_detail": {"mode": "odoo-xmlrpc", "page_id": direct.get("page_id")},
+                    "verify_detail": direct.get("verify"),
+                }
+            ]
+            overall = bool(direct.get("ok"))
+            return {
+                "ok": overall,
+                "step_complete": True,
+                "injected": overall,
+                "core": core,
+                "direct": direct,
+                "surfaces": surfaces,
+                "customer_message": (
+                    "Los cambios se guardaron en Odoo Arkiphere."
+                    if overall
+                    else "No se pudo publicar en Odoo ahora. No se simuló un resultado correcto."
+                ),
+                "message": (
+                    "Inject verified via Odoo XML-RPC."
+                    if overall
+                    else direct.get("message") or "Odoo XML-RPC inject failed. Success was not faked."
+                ),
+            }
     return {
         "ok": overall,
         "step_complete": True,

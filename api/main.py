@@ -18,6 +18,7 @@ from app.routers import (
     connectors,
     wizard,
     entitlement,
+    connection,
 )
 
 @asynccontextmanager
@@ -57,6 +58,7 @@ app.include_router(packs.router, prefix="/api/packs", tags=["Ollama Packs"])
 app.include_router(connectors.router, prefix="/api/connectors", tags=["Connectors"])
 app.include_router(wizard.router, prefix="/api/wizard", tags=["Wizard"])
 app.include_router(entitlement.router, prefix="/api/entitlement", tags=["Entitlement"])
+app.include_router(connection.router, prefix="/api/connection", tags=["Connection"])
 
 
 @app.get("/")

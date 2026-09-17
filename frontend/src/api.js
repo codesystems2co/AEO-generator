@@ -4,6 +4,16 @@ const API_BASE = import.meta.env.VITE_API_URL || (
     : ''
 )
 
+let licenseKey = ''
+
+export function setLicense(key) {
+  licenseKey = (key || '').trim()
+}
+
+export function getLicense() {
+  return licenseKey
+}
+
 // User-friendly field name mapping
 const FIELD_LABELS = {
   title: 'Title',
@@ -34,6 +44,7 @@ async function request(path, options = {}) {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(licenseKey ? { 'X-AEO-License': licenseKey } : {}),
       ...options.headers,
     },
   })
@@ -135,10 +146,19 @@ export const api = {
     injectVerify: (body) => request('/api/wizard/inject-verify', { method: 'POST', body: JSON.stringify(body) }),
   },
   entitlement: {
-    consume: (key, github_login) => request('/api/entitlement/consume', {
+    consume: (key, github_login, site) => request('/api/entitlement/consume', {
       method: 'POST',
-      body: JSON.stringify({ key: key || '', github_login: github_login || undefined }),
+      body: JSON.stringify({
+        key: key || '',
+        github_login: github_login || undefined,
+        site: site || undefined,
+      }),
     }),
+  },
+  connection: {
+    status: () => request('/api/connection/status'),
+    register: (body) => request('/api/connection/register', { method: 'POST', body: JSON.stringify(body) }),
+    revoke: (body) => request('/api/connection/revoke', { method: 'POST', body: JSON.stringify(body || {}) }),
   },
   health: () => request('/health'),
 }

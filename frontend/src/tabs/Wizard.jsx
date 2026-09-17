@@ -1,12 +1,31 @@
 import { useEffect, useMemo, useState } from 'react'
-import { api } from '../api'
+import { api, setLicense } from '../api'
 import TreeList from '../components/TreeList'
 import '../App.css'
 
 const STEPS = [
-  { id: 1, key: 'google', label: 'Google' },
-  { id: 2, key: 'aeo', label: 'AEO' },
-  { id: 3, key: 'seo', label: 'SEO' },
+  { id: 1, key: 'connect', label: 'Conexión' },
+  { id: 2, key: 'google', label: 'Google' },
+  { id: 3, key: 'aeo', label: 'AEO' },
+  { id: 4, key: 'seo', label: 'SEO' },
+]
+
+const PLATFORMS = [
+  {
+    id: 'odoo',
+    label: 'Odoo',
+    hint: 'URL del pedido + base, usuario y clave API',
+  },
+  {
+    id: 'prestashop',
+    label: 'PrestaShop',
+    hint: 'URL del pedido + clave del webservice',
+  },
+  {
+    id: 'woocommerce',
+    label: 'WooCommerce',
+    hint: 'URL del pedido + clave y secreto REST',
+  },
 ]
 
 const PRODUCT_PAGE_URL =
@@ -68,6 +87,13 @@ function hostLabel(url) {
   }
 }
 
+function businessFromHost(url) {
+  const host = hostLabel(url).replace(/^www\./i, '')
+  const stem = (host.split('.')[0] || host).replace(/[-_]+/g, ' ')
+  if (!stem) return ''
+  return stem.charAt(0).toUpperCase() + stem.slice(1)
+}
+
 function friendlyGapMessage(name, message, connected) {
   if (name === 'Client consent') {
     return connected ? 'Acceso concedido' : 'Pendiente de autorización'
@@ -109,6 +135,32 @@ function displayGaps(gaps, connected) {
   })
 }
 
+function PlatformMark({ id }) {
+  if (id === 'prestashop') {
+    return (
+      <svg className="platform-mark" viewBox="0 0 48 48" aria-hidden="true">
+        <rect width="48" height="48" rx="12" fill="#DF0067" />
+        <path fill="#fff" d="M14 32V16h9.2c4.4 0 7.2 2.4 7.2 6.2 0 3.9-2.9 6.3-7.4 6.3H20.4V32H14Zm6.4-13.2v6.2h2.6c2.1 0 3.3-1.1 3.3-3.1 0-2-1.2-3.1-3.3-3.1H20.4Z" />
+      </svg>
+    )
+  }
+  if (id === 'woocommerce') {
+    return (
+      <svg className="platform-mark" viewBox="0 0 48 48" aria-hidden="true">
+        <rect width="48" height="48" rx="12" fill="#7F54B3" />
+        <path fill="#fff" d="M14.5 18.2 18 31.5h4.1l2.3-8.4 2.3 8.4h4.1L34.5 18.2h-4.1l-2.2 9.2-2.5-9.2h-4.3l-2.5 9.2-2.2-9.2h-4.2Z" />
+      </svg>
+    )
+  }
+  return (
+    <svg className="platform-mark" viewBox="0 0 48 48" aria-hidden="true">
+      <rect width="48" height="48" rx="12" fill="#714B67" />
+      <circle cx="24" cy="24" r="9.5" fill="none" stroke="#fff" strokeWidth="3.4" />
+      <circle cx="24" cy="24" r="3.2" fill="#fff" />
+    </svg>
+  )
+}
+
 export default function Wizard() {
   const query = readQuery()
   const [step, setStep] = useState(1)
@@ -121,10 +173,19 @@ export default function Wizard() {
   const [context, setContext] = useState('')
   const [google, setGoogle] = useState(null)
   const [pack, setPack] = useState(null)
+  const [inject, setInject] = useState(null)
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(Boolean(query.license))
   const [error, setError] = useState(null)
   const [entitlement, setEntitlement] = useState(null)
+  const [platform, setPlatform] = useState('odoo')
+  const [database, setDatabase] = useState('')
+  const [username, setUsername] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [wsKey, setWsKey] = useState('')
+  const [consumerKey, setConsumerKey] = useState('')
+  const [consumerSecret, setConsumerSecret] = useState('')
+  const [connection, setConnection] = useState(null)
   const gscHint = query.gscHint
   const githubLogin = query.githubLogin
 
@@ -132,9 +193,15 @@ export default function Wizard() {
     setChecking(true)
     setError(null)
     try {
-      const data = await api.entitlement.consume(key, githubLogin || undefined)
+      setLicense(key)
+      const data = await api.entitlement.consume(key, githubLogin || undefined, query.site || undefined)
       setEntitlement(data)
-      if (data?.aeo_site_url) setSiteUrl(keepHttps(data.aeo_site_url))
+      if (data?.allowed && data?.aeo_site_url) {
+        const url = keepHttps(data.aeo_site_url)
+        setSiteUrl(url)
+        setBusinessName((prev) => prev || businessFromHost(url))
+        setTopic((prev) => prev || businessFromHost(url))
+      }
       return data
     } catch (err) {
       const blocked = {
@@ -165,28 +232,65 @@ export default function Wizard() {
 
   useEffect(() => {
     if (!entitlement?.allowed || !query.license) return
-    const url = keepHttps(entitlement.aeo_site_url || query.site)
+    const url = keepHttps(entitlement.aeo_site_url || '')
     if (!url) return
     setSiteUrl(url)
+    setLicense(query.license)
     setStarted(true)
     setStep(1)
-  }, [entitlement, query.license, query.site])
+    api.connection.status().then((row) => {
+      if (row?.connection?.connected) {
+        setConnection(row)
+        if (row.connection.platform) setPlatform(row.connection.platform)
+        if (row.connection.database) setDatabase(row.connection.database)
+        if (row.connection.username) setUsername(row.connection.username)
+      }
+    }).catch(() => {})
+  }, [entitlement, query.license])
 
   const apiConnected = Boolean(
     status?.google?.modes?.oauth?.connected || google?.auth?.modes?.oauth?.connected
   )
   const googleConnected = gscHint || apiConnected
-
+  const connectDone = Boolean(connection?.connected || connection?.connection?.connected)
   const googleDone = Boolean(google?.step_complete)
   const aeoDone = Boolean(pack?.aeo)
   const seoDone = Boolean(pack?.seo)
-  const complete = { 1: googleDone, 2: aeoDone, 3: seoDone }
-  const canContinue = step < 3 && complete[step]
+  const complete = { 1: connectDone, 2: googleDone, 3: aeoDone, 4: seoDone }
+  const canContinue = step < 4 && complete[step]
 
   const gaps = useMemo(
     () => displayGaps(google?.gaps, googleConnected),
     [google, googleConnected]
   )
+
+  async function saveConnection(e) {
+    e?.preventDefault()
+    if (!entitlement?.allowed) return
+    setError(null)
+    setLoading(true)
+    try {
+      const data = await api.connection.register({
+        license: licenseKey,
+        platform,
+        url: siteUrl,
+        database: database || undefined,
+        username: username || undefined,
+        api_key: apiKey || undefined,
+        ws_key: wsKey || undefined,
+        consumer_key: consumerKey || undefined,
+        consumer_secret: consumerSecret || undefined,
+      })
+      setConnection(data)
+      setApiKey('')
+      setWsKey('')
+      setConsumerSecret('')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function runAutofix(e) {
     e?.preventDefault()
@@ -200,6 +304,7 @@ export default function Wizard() {
         topic: businessName || topic || undefined,
         context: context || undefined,
         locale: 'es',
+        license: licenseKey,
       })
       setGoogle(data)
     } catch (err) {
@@ -215,13 +320,37 @@ export default function Wizard() {
     setLoading(true)
     try {
       const data = await api.packs.generate({
-        topic: topic.trim() || businessName.trim() || 'Mi tienda',
+        topic: topic.trim() || businessName.trim() || hostLabel(siteUrl),
         url: siteUrl,
         business_name: businessName.trim() || undefined,
         context: context.trim() || undefined,
         locale: 'es',
+        license: licenseKey,
       })
       setPack(data)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function runInject() {
+    if (!pack?.seo || !entitlement?.allowed) return
+    setError(null)
+    setLoading(true)
+    try {
+      const data = await api.wizard.injectVerify({
+        site_url: siteUrl,
+        license: licenseKey,
+        seo: {
+          title: pack.seo.title,
+          meta_description: pack.seo.meta_description,
+          keywords: pack.seo.keywords,
+          canonical: siteUrl,
+        },
+      })
+      setInject(data)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -239,9 +368,10 @@ export default function Wizard() {
 
   const allowed = Boolean(entitlement?.allowed)
   const showGate = !started
-  const confirmedSite = keepHttps(entitlement?.aeo_site_url || (allowed ? query.site : '') || siteUrl)
+  const confirmedSite = keepHttps(entitlement?.aeo_site_url || (allowed ? siteUrl : ''))
   const acquireUrl = PRODUCT_PAGE_URL
   const acquireLabel = BLOCKED_COPY.cta_label
+  const selected = PLATFORMS.find((p) => p.id === platform) || PLATFORMS[0]
 
   if (checking && !entitlement) {
     return (
@@ -307,6 +437,7 @@ export default function Wizard() {
               disabled={!confirmedSite || checking}
               onClick={() => {
                 setSiteUrl(confirmedSite)
+                setLicense(licenseKey)
                 setStarted(true)
                 setStep(1)
               }}
@@ -334,10 +465,11 @@ export default function Wizard() {
       <div className="card">
         <h3>Asistente de optimización</h3>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-          Completa cada paso para habilitar Continuar. Empezamos por Google Search, luego el pack AEO y el pack SEO.
+          Primero conecta la tienda del pedido. Luego Google Search, el pack AEO y el pack SEO.
         </p>
         <div className="btn-row" style={{ marginBottom: '0.85rem' }}>
           <span className="badge badge-success">Pedido {entitlement.sale_order_name}</span>
+          <span className="badge badge-muted">{hostLabel(siteUrl)}</span>
         </div>
         <ol className="stepper">
           {STEPS.map((s) => (
@@ -359,9 +491,95 @@ export default function Wizard() {
 
       {step === 1 && (
         <div className="card">
-          <h3>Paso 1 — Google Search</h3>
+          <h3>Paso 1 — Conexión con la tienda</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-            Revisamos cómo ve Google tu sitio y corregimos lo que se pueda de forma automática.
+            Elige la plataforma e introduce tú los datos de conexión. Search Engine Optimizator los
+            guarda en la línea del pedido Arkiphere para interactuar de punta a punta.
+          </p>
+          <div className="form-row">
+            <span className="gate-site-label">Sitio del pedido</span>
+            <p className="gate-site-value">{hostLabel(siteUrl)}</p>
+          </div>
+          <div className="platform-grid">
+            {PLATFORMS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={`platform-card ${platform === p.id ? 'active' : ''}`}
+                onClick={() => setPlatform(p.id)}
+              >
+                <PlatformMark id={p.id} />
+                <strong>{p.label}</strong>
+                <span>{p.hint}</span>
+              </button>
+            ))}
+          </div>
+          <form onSubmit={saveConnection}>
+            {platform === 'odoo' && (
+              <>
+                <div className="form-row">
+                  <label htmlFor="aeo-db">Base de datos</label>
+                  <input id="aeo-db" value={database} onChange={(e) => setDatabase(e.target.value)} placeholder="osh" autoComplete="off" />
+                </div>
+                <div className="form-row">
+                  <label htmlFor="aeo-user">Usuario</label>
+                  <input id="aeo-user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Usuario XML-RPC" autoComplete="off" />
+                </div>
+                <div className="form-row">
+                  <label htmlFor="aeo-key">Clave API</label>
+                  <input id="aeo-key" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" />
+                </div>
+              </>
+            )}
+            {platform === 'prestashop' && (
+              <div className="form-row">
+                <label htmlFor="aeo-ws">Clave del webservice</label>
+                <input id="aeo-ws" type="password" value={wsKey} onChange={(e) => setWsKey(e.target.value)} autoComplete="off" />
+              </div>
+            )}
+            {platform === 'woocommerce' && (
+              <>
+                <div className="form-row">
+                  <label htmlFor="aeo-ck">Clave de consumidor</label>
+                  <input id="aeo-ck" value={consumerKey} onChange={(e) => setConsumerKey(e.target.value)} autoComplete="off" />
+                </div>
+                <div className="form-row">
+                  <label htmlFor="aeo-cs">Secreto de consumidor</label>
+                  <input id="aeo-cs" type="password" value={consumerSecret} onChange={(e) => setConsumerSecret(e.target.value)} autoComplete="off" />
+                </div>
+              </>
+            )}
+            <button type="submit" className="btn" disabled={loading}>
+              {loading ? 'Guardando conexión…' : `Conectar ${selected.label}`}
+            </button>
+          </form>
+          {connectDone && (
+            <p className="gap-ok" style={{ marginTop: '0.85rem' }}>
+              ✓ {connection?.message || 'Conexión lista. Puedes continuar.'}
+            </p>
+          )}
+          {connection?.arkiphere && (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.4rem' }}>
+              {connection.arkiphere.ok
+                ? `Pedido ${connection.sale_order_name || entitlement.sale_order_name}: datos visibles en la línea de pedido.`
+                : connection.arkiphere.message || 'Espejo local guardado.'}
+            </p>
+          )}
+          {(connection?.connection?.recommendations || []).length > 0 && (
+            <ul className="list-unstyled" style={{ marginTop: '0.75rem' }}>
+              {connection.connection.recommendations.map((item) => (
+                <li key={item.id}>○ {item.label} — {item.why}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="card">
+          <h3>Paso 2 — Google Search</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+            Revisamos cómo ve Google tu sitio real y corregimos lo que se pueda de forma automática.
           </p>
           <form onSubmit={runAutofix}>
             <div className="form-row">
@@ -406,18 +624,18 @@ export default function Wizard() {
         </div>
       )}
 
-      {step === 2 && (
+      {step === 3 && (
         <div className="card">
-          <h3>Paso 2 — Pack AEO</h3>
+          <h3>Paso 3 — Pack AEO</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-            Ollama genera el pack en forma de árbol. Tema, Negocio y Hechos son los datos de entrada — no hace falta hablar de infraestructura.
+            Ollama arma el pack General a partir del hostname, el schema y los hechos del negocio.
           </p>
           <div className="form-row">
             <label>Tema *</label>
             <input
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="Ej. zapatos de running para ciudad"
+              placeholder="Qué debe entender Google y los motores de respuesta"
             />
           </div>
           <div className="form-row">
@@ -450,11 +668,11 @@ export default function Wizard() {
         </div>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <div className="card">
-          <h3>Paso 3 — Pack SEO</h3>
+          <h3>Paso 4 — Pack SEO</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-            Mismo pack: Ollama arma el árbol SEO (título, descripción, palabras clave y puntuación) a partir de los datos del paso anterior.
+            Mismo pack: título, descripción y puntuación. Luego se publica en la tienda conectada.
           </p>
           {!pack?.seo && (
             <button type="button" className="btn" disabled={loading || !(topic.trim() || businessName.trim())} onClick={runPack}>
@@ -474,6 +692,16 @@ export default function Wizard() {
               )}
               <TreeList nodes={pack.tree} rootLabel={pack.topic} />
               <pre className="resume-pre">{pack.resume}</pre>
+              <div className="btn-row" style={{ marginTop: '0.85rem' }}>
+                <button type="button" className="btn" disabled={loading} onClick={runInject}>
+                  {loading ? 'Publicando…' : 'Publicar en la tienda'}
+                </button>
+              </div>
+              {inject && (
+                <p className={inject.ok ? 'ok-msg' : 'error-msg'}>
+                  {inject.customer_message || inject.message}
+                </p>
+              )}
             </>
           )}
         </div>
@@ -485,7 +713,7 @@ export default function Wizard() {
         <button type="button" className="btn btn-secondary" disabled={step === 1 || loading} onClick={goBack}>
           Atrás
         </button>
-        {step < 3 ? (
+        {step < 4 ? (
           <button type="button" className="btn" disabled={!canContinue || loading} onClick={goNext}>
             Continuar
           </button>

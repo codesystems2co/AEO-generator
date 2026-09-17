@@ -1,0 +1,25 @@
+# Phase 6 real-site — READY
+
+**Date:** 2026-09-17  
+**Host:** aeo_generator live `:9012` / `:8642`  
+**Order:** S00247 · site SoT `https://arkiphere.cloud` (not example.com)  
+**Pack:** General Pack (Google → AEO → SEO)
+
+## Priority READY to PM
+
+| Lock | Result |
+|------|--------|
+| Wizard step 1 = Conexión with Odoo / Presta / Woo icons | PASS |
+| Site locked from consume SoT `arkiphere.cloud` | PASS |
+| Connection typed in AEO, visible on sale.order.line 351 | PASS (`aeo_connect_login=thedeployer777`, platform odoo, shop URL arkiphere.cloud, state registered, has_secret) |
+| Packs/wizard/google mismatch → **403** | PASS (`Usa arkiphere.cloud`) |
+| Google Search step solved on real site | PASS (`step_complete: true`, Ollama loop closed remaining gaps) |
+| General Pack from hostname graph + schema snapshot | PASS (`backend: ollama`, canonical `https://arkiphere.cloud`) |
+| Inject into Odoo website.page | FAIL honest — typed API key is not a live XML-RPC credential; Core `:18642` down; success not faked |
+| Fork `codesystems2co/AEO-generator` branch `arkiphere-optimizator` | see GIT_FORK_TESTED.md |
+
+CE `/aeo/connection/http` is still 404. Line write used sale.order.line fields `aeo_connect_*` (encrypted secret already on the line). Generator posts those field names when XML-RPC is configured.
+
+## Evidence
+
+`_bmad-output/2026-09-17_phase6_real_site/`

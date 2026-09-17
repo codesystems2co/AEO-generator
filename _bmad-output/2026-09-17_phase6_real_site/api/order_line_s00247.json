@@ -1,0 +1,13 @@
+{
+  "sale_order_name": "S00247",
+  "sale_line_id": 351,
+  "aeo_site_url": "https://arkiphere.cloud",
+  "aeo_connect_platform": "odoo",
+  "aeo_connect_shop_url": "https://arkiphere.cloud",
+  "aeo_connect_login": "thedeployer777",
+  "aeo_connect_database": "osh",
+  "aeo_connect_rpc_url": "https://arkiphere.cloud/xmlrpc/2/object",
+  "aeo_connect_state": "registered",
+  "aeo_connect_has_secret": true,
+  "aeo_license_key": "AEO-REDACTED…"
+}

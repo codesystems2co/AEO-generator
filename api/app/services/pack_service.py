@@ -13,15 +13,20 @@ from app.services.aeo_service import generate_aeo_suggestions
 from app.services.chat_service import check_ollama_health
 from app.services.keywords_service import extract_keywords
 from app.services.meta_service import generate_meta_tags
+from app.services.schema_context import prompt_facts, snapshot as schema_snapshot
 from app.services.seo_score_service import calculate_seo_score
 
 PACK_SYSTEM = (
-    "You generate publish-ready AEO and SEO packs. Reply with JSON only, no markdown. "
+    "You generate publish-ready AEO and SEO packs for a real commerce hostname. "
+    "Reply with JSON only, no markdown. "
     "Schema: {\"title\":\"\",\"meta_description\":\"\",\"summary\":\"\","
     "\"keywords\":[\"\"],\"h2\":[\"\"],\"faq\":[{\"question\":\"\",\"answer\":\"\"}],"
     "\"entities\":[\"\"],\"tips\":[\"\"]}. "
     "title 30-60 chars. meta_description 120-160 chars. "
-    "8 keywords, 5 h2, 4 faq with full answers. Reuse given facts. Never invent products."
+    "8 keywords, 5 h2, 4 faq with full answers. "
+    "Ground every claim in the hostname graph, schema snapshot, and given facts. "
+    "Reuse visible title/H1/JSON-LD types. Never invent products, SKUs, or a fake host. "
+    "This is a General Pack (Google + AEO + SEO), not a catalog pack."
 )
 
 
@@ -113,7 +118,9 @@ async def _ollama_pack(topic: str, context: str, locale: str) -> Optional[Dict[s
     model = settings.OLLAMA_MODEL
     timeout = httpx.Timeout(float(getattr(settings, "PACK_OLLAMA_TIMEOUT_SEC", 90.0)), connect=8.0)
     user = (
-        f"Locale: {locale}\nTopic: {topic}\nFacts:\n{context or '(none)'}\n"
+        f"Locale: {locale}\nTopic: {topic}\n"
+        "Use the live hostname and schema snapshot. Do not mention example.com.\n"
+        f"Facts:\n{context or '(none)'}\n"
         "Return JSON only."
     )
     payload = {
@@ -266,7 +273,9 @@ async def generate_pack(
     locale: str = "en",
 ) -> Dict[str, Any]:
     topic = (topic or business_name or url or "Untitled").strip()
-    facts = " | ".join(x for x in (business_name, url, context) if x)
+    snap = await schema_snapshot(url) if url else {}
+    graph_facts = prompt_facts(snap, extra=" | ".join(x for x in (business_name, context) if x))
+    facts = graph_facts or " | ".join(x for x in (business_name, url, context) if x)
     health = await check_ollama_health()
     pack = _heuristic_pack(topic, facts or context, url)
     backend = "heuristic"
@@ -286,6 +295,14 @@ async def generate_pack(
         "backend": backend,
         "model": settings.OLLAMA_MODEL if backend == "ollama" else None,
         "ollama": health,
+        "schema_snapshot": {
+            "host": snap.get("host"),
+            "title": snap.get("title"),
+            "h1": snap.get("h1"),
+            "schema_types": snap.get("schema_types"),
+            "internal_links": snap.get("internal_links"),
+            "ok": snap.get("ok"),
+        },
         "tree": tree,
         "resume": resume,
         "aeo": pack["aeo"],

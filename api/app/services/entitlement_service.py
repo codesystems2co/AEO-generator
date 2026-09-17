@@ -184,6 +184,12 @@ def register_confirmed(
 
 def revoke(github_login: str, sale_order_name: Optional[str] = None) -> Dict[str, Any]:
     """Used for E2E blocked state: drop Optimizator ledger rows (does not cancel Arkiphere SOs)."""
+    try:
+        from app.services import connection_store
+
+        connection_store.revoke("", sale_order_name=sale_order_name)
+    except Exception:
+        pass
     login = _norm_login(github_login)
     with _lock:
         store = _load_store()
@@ -278,7 +284,11 @@ def _blocked(key: Optional[str] = None, message: Optional[str] = None, error: Op
     }
 
 
-def consume(key: Optional[str] = None, github_login: Optional[str] = None) -> Dict[str, Any]:
+def consume(
+    key: Optional[str] = None,
+    github_login: Optional[str] = None,
+    site: Optional[str] = None,
+) -> Dict[str, Any]:
     """Forward to Arkiphere /aeo/license/consume/http. Does not decide entitlement locally."""
     license_key = (key or "").strip()
     if not license_key:
@@ -288,6 +298,8 @@ def consume(key: Optional[str] = None, github_login: Optional[str] = None) -> Di
     payload = {"key": license_key}
     if login:
         payload["github_login"] = login
+    if site:
+        payload["site"] = site.strip()
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         f"{base}/aeo/license/consume/http",

@@ -1,11 +1,12 @@
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.services import google_search_service as gsc
+from app.services.site_guard import bind_license_site, extract_license
 
 router = APIRouter()
 
@@ -13,6 +14,8 @@ router = APIRouter()
 class ReadinessRequest(BaseModel):
     site_url: str = Field(..., min_length=3)
     mode: Optional[str] = Field(default=None, description="oauth | service_account")
+    license: Optional[str] = None
+    key: Optional[str] = None
 
 
 class ServiceAccountBody(BaseModel):
@@ -25,8 +28,12 @@ async def google_status():
 
 
 @router.post("/readiness")
-async def google_readiness(req: ReadinessRequest):
-    return await gsc.readiness(req.site_url, mode=req.mode)
+async def google_readiness(
+    req: ReadinessRequest,
+    x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
+):
+    bound = bind_license_site(extract_license(x_aeo_license, req.license, req.key), req.site_url)
+    return await gsc.readiness(bound["bound_site_url"], mode=req.mode)
 
 
 @router.post("/oauth/start")
