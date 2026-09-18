@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { api } from '../api'
 import TreeList from '../components/TreeList'
 import '../App.css'
@@ -8,14 +8,9 @@ export default function Packs() {
   const [url, setUrl] = useState('https://arkiphere.cloud')
   const [businessName, setBusinessName] = useState('Arkiphere Cloud')
   const [context, setContext] = useState('Odoo PaaS, Community and Enterprise, free trial, AI billing.')
-  const [health, setHealth] = useState(null)
   const [pack, setPack] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-
-  useEffect(() => {
-    api.packs.health().then(setHealth).catch((err) => setHealth({ status: 'error', error: err.message }))
-  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -48,14 +43,6 @@ export default function Packs() {
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
           Generate a publish pack and a human-readable tree resume for your site.
         </p>
-        {health && (
-          <p style={{ marginBottom: '1rem' }}>
-            <span className={`badge ${health.status === 'ok' ? 'badge-success' : 'badge-warn'}`}>
-              Pack service {health.status}
-            </span>
-            
-          </p>
-        )}
         <form onSubmit={handleSubmit}>
           <div className="form-row">
             <label>Topic / brand *</label>
@@ -85,8 +72,6 @@ export default function Packs() {
           <div className="card">
             <h3>Tree list resume</h3>
             <div className="btn-row" style={{ marginBottom: '0.75rem' }}>
-              <span className="badge badge-muted">pack ready</span>
-              
               <button type="button" className="btn btn-secondary" onClick={copyResume}>Copy resume</button>
             </div>
             <TreeList nodes={pack.tree} rootLabel={pack.topic} />

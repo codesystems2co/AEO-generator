@@ -1,1 +1,9 @@
 READY FOR TESTER — hide infra live :9012 clean
+
+Date: 2026-09-18
+Live UI: http://2.28.106.22:9012/
+Product: Search Engine Optimizator
+Wizard-only. No Core / Ollama / Docker / K8s / :18642 / server.py / Re-probe in customer chrome.
+Grep src: empty. Screenshots 01 (gate) + 02 (after clave check) distinct.
+Fork: codesystems2co/AEO-generator @ arkiphere-optimizator
+Priority READY to PM.

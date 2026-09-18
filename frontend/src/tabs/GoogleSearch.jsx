@@ -109,9 +109,9 @@ export default function GoogleSearch() {
             <span>
               {oauth.configured
                 ? oauth.connected
-                  ? 'Client ID set · consent granted'
-                  : 'Client ID set · waiting for consent'
-                : 'Google client not configured yet — ask your Arkiphere admin'}
+                  ? 'Conectado a Search Console'
+                  : 'Pendiente de autorización'
+                : 'Pendiente de conexión'}
             </span>
           </button>
           <button
@@ -122,8 +122,8 @@ export default function GoogleSearch() {
             <strong>Service Account</strong>
             <span>
               {sa.valid_json || sa.configured
-                ? `Key present${sa.client_email ? ` · ${sa.client_email}` : ''}`
-                : 'Paste a JSON key or set GOOGLE_SA_JSON'}
+                ? 'Cuenta de servicio lista'
+                : 'Pega la clave JSON de Google'}
             </span>
           </button>
         </div>

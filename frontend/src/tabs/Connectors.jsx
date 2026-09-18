@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { api } from '../api'
 import '../App.css'
 
@@ -10,7 +10,6 @@ const PLATFORMS = [
 
 export default function Connectors() {
   const [platform, setPlatform] = useState('odoo')
-  const [health, setHealth] = useState(null)
   const [url, setUrl] = useState('')
   const [database, setDatabase] = useState('')
   const [username, setUsername] = useState('')
@@ -23,18 +22,6 @@ export default function Connectors() {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(null)
   const [error, setError] = useState(null)
-
-  async function refreshHealth() {
-    try {
-      setHealth(await api.connectors.health())
-    } catch (err) {
-      setHealth({ reachable: false, message: err.message })
-    }
-  }
-
-  useEffect(() => {
-    refreshHealth()
-  }, [])
 
   function payload() {
     return {
@@ -64,9 +51,8 @@ export default function Connectors() {
         ? await api.connectors.write(payload())
         : await api.connectors.verify(payload())
       setResult(data)
-      if (data.core) setHealth(data.core)
     } catch (err) {
-      setError(err.message || 'Connection request failed')
+      setError(err.message || 'No se pudo publicar')
     } finally {
       setLoading(null)
     }
@@ -77,23 +63,9 @@ export default function Connectors() {
       <div className="card">
         <h3>Conexión — publicar / verificar en la tienda</h3>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-          Connect your shop to publish SEO fields (title, description, keywords) and verify write-back.
-          Supported platforms: Odoo, PrestaShop, WooCommerce.
+          Conecta la tienda para publicar el pack SEO (título, descripción, palabras clave) y comprobar
+          la publicación. Plataformas: Odoo, PrestaShop, WooCommerce.
         </p>
-        {health && (
-          <p>
-            <span className={`badge ${health.reachable ? 'badge-success' : 'badge-warn'}`}>
-              Shop API {health.reachable ? 'ready' : 'offline'}
-            </span>
-            
-          </p>
-        )}
-        {health?.message && (
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{health.message}</p>
-        )}
-        <button type="button" className="btn btn-secondary" onClick={refreshHealth} style={{ marginTop: 8 }}>
-          Recheck connection
-        </button>
       </div>
 
       <div className="card">
@@ -149,10 +121,10 @@ export default function Connectors() {
         </div>
         <div className="btn-row">
           <button type="button" className="btn" disabled={!!loading} onClick={() => run('write')}>
-            {loading === 'write' ? 'Writing…' : 'Publish SEO'}
+            {loading === 'write' ? 'Publicando…' : 'Publicar'}
           </button>
           <button type="button" className="btn btn-secondary" disabled={!!loading} onClick={() => run('verify')}>
-            {loading === 'verify' ? 'Verifying…' : 'Verify publish'}
+            {loading === 'verify' ? 'Comprobando…' : 'Comprobar publicación'}
           </button>
         </div>
         {error && <p className="error-msg">{error}</p>}
@@ -160,20 +132,14 @@ export default function Connectors() {
 
       {result && (
         <div className="card">
-          <h3>Publish result</h3>
+          <h3>Publicación</h3>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
             <span className={`badge ${result.ok ? 'badge-success' : 'badge-warn'}`}>
-              {result.ok ? 'OK' : 'Not applied'}
+              {result.ok ? 'OK' : 'No aplicada'}
             </span>
-            <span className="badge badge-muted">{result.action || 'proxy'}</span>
             {result.platform && <span className="badge badge-muted">{result.platform}</span>}
-            {result.path && <span className="badge badge-muted">{result.path}</span>}
-            {result.status_code != null && <span className="badge badge-muted">HTTP {result.status_code}</span>}
           </div>
           {result.message && <p style={{ color: 'var(--text-muted)' }}>{result.message}</p>}
-          <div className="output">
-            <pre>{JSON.stringify(result.data || result, null, 2)}</pre>
-          </div>
         </div>
       )}
     </>

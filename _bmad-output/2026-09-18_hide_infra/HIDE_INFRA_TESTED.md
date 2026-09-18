@@ -2,28 +2,48 @@
 
 **Date:** 2026-09-18  
 **Live:** http://2.28.106.22:9012/  
-**Card:** Phase 4 · UX — Ocultar infraestructura (Core/Ollama/puertos)
+**Product:** Search Engine Optimizator  
+**Card:** Phase 4 · UX — Ocultar infraestructura (Core/Ollama/puertos)  
+**Result:** **PASS** (Tester)
 
-## Result: PASS
+## Customer UI
 
-Customer-visible product UI shows **zero** infra terms:
+Live gate and wizard chrome show **zero** generation-infra terms:
+
 - No Core / Ollama / Docker / Kubernetes / K8s
 - No ports `:18642` / `:8642` / `:9012` / `server.py`
 - No “Re-probe Core”, “Write SEO via Core”, “Ollama pack”
+- No Ollama/Core health badges
 
-App remains wizard-only (`App.jsx` → Layout + Wizard). Connectors/Packs tabs unreachable from nav; their copy was still scrubbed so any deep link is business language.
+Primary UI remains wizard-only (`App.jsx` → Layout + Wizard). Header is logo + **Search Engine Optimizator**. Connectors / Packs / Chat / Google Search tabs are not in the nav.
 
-## Changes
-- `frontend/src/tabs/Connectors.jsx` — Conexión / Publish SEO / Verify publish
-- `frontend/src/tabs/Packs.jsx` — AEO + SEO pack / Pack service
-- `frontend/src/tabs/GoogleSearch.jsx` — no “AEO Core”
-- `frontend/src/tabs/Wizard.jsx` — gap classifier without infra tokens
-- Live pod `/app/src/tabs/*` updated to match
+Business language on the live wizard (i18n): Conexión, Google Analysis, AEO, SEO; pack intros talk about tienda / Google / publicar — not generation hosts.
+
+## Code (fork `arkiphere-optimizator`)
+
+| File | Change |
+|------|--------|
+| `frontend/src/tabs/Connectors.jsx` | Conexión / Publicar / Comprobar publicación. Health probe, `core_url`, JSON dump, “proxy” badge removed. Unreachable from App. |
+| `frontend/src/tabs/Packs.jsx` | Pack AEO + SEO. Health badge / backend chip removed. Unreachable from App. |
+| `frontend/src/tabs/GoogleSearch.jsx` | No “AEO Core” / env-var copy. Unreachable from App. |
+| `frontend/src/tabs/Wizard.jsx` | Gap classifier maps secret/env leaks to business labels (already on branch). |
+| `frontend/src/App.jsx` / `Layout.jsx` | Unchanged: wizard only, no Asistente/Herramientas nav. |
+
+`frontend/src/api.js` still builds the API host at runtime (not shown in JSX). Live Vite on `:9012` proxies product calls; customers do not see that string in the UI.
 
 ## Evidence
-- `screenshots/01_wizard_home.png`, `02_wizard_after_nav.png`
-- `LIVE_GREP.json` — visible_hits / html_hits empty
-- Live module curl: Connectors/Packs/GoogleSearch/Wizard CLEAN for infra regex
+
+- `screenshots/01_wizard_home.png` — live gate, empty key (md5 `69338cbf…`)
+- `screenshots/02_wizard_after_nav.png` — same gate after `AEO-TEST` check (md5 `67b14724…`, distinct)
+- `GREP_SRC_DIST.txt` — no `Ollama` / `:18642` / Re-probe / Write SEO via Core / AEO Core in `frontend/src`
+- `LIVE_GREP.json` — visible DOM hits empty
+- Live modules `copy.js` / Packs / Connectors / GoogleSearch: infra regex empty
+- DevTools: http://2.28.106.22:9012/ title Search Engine Optimizator; innerText hits `[]`; no console errors
 
 ## Git
-Push fork `codesystems2co/AEO-generator` branch `arkiphere-optimizator` only (never gwrxuk).
+
+Fork only: `https://github.com/codesystems2co/AEO-generator` branch `arkiphere-optimizator` (never gwrxuk).
+
+## Note for Tester
+
+Unlocked pack steps (AEO / SEO / Publicar) need a real order license. Copy for those steps is in live `src/i18n/copy.js` (intros above) with no infra tokens. Deep links `#packs` / `#connectors` do not mount those tabs.
