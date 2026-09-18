@@ -97,7 +97,7 @@ export default function GoogleSearch() {
         <h3>Google Search readiness</h3>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
           Public crawl checks plus Search Console auth. Choose <strong>OAuth</strong> (client consent)
-          or <strong>Service Account</strong>. The generator never replaces AEO Core.
+          or <strong>Service Account</strong>. Complete Google Search before publishing your pack.
         </p>
         <div className="mode-grid">
           <button
@@ -111,7 +111,7 @@ export default function GoogleSearch() {
                 ? oauth.connected
                   ? 'Client ID set · consent granted'
                   : 'Client ID set · waiting for consent'
-                : 'Set GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET on the API'}
+                : 'Google client not configured yet — ask your Arkiphere admin'}
             </span>
           </button>
           <button

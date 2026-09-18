@@ -66,7 +66,7 @@ export default function Connectors() {
       setResult(data)
       if (data.core) setHealth(data.core)
     } catch (err) {
-      setError(err.message || 'Core request failed')
+      setError(err.message || 'Connection request failed')
     } finally {
       setLoading(null)
     }
@@ -75,24 +75,24 @@ export default function Connectors() {
   return (
     <>
       <div className="card">
-        <h3>Connectors — write / verify via AEO Core</h3>
+        <h3>Conexión — publicar / verificar en la tienda</h3>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-          This UI only forwards to Core <code>server.py</code> on <strong>:18642</strong>. It does not
-          implement Odoo / PrestaShop / WooCommerce writes itself.
+          Connect your shop to publish SEO fields (title, description, keywords) and verify write-back.
+          Supported platforms: Odoo, PrestaShop, WooCommerce.
         </p>
         {health && (
           <p>
             <span className={`badge ${health.reachable ? 'badge-success' : 'badge-warn'}`}>
-              Core {health.reachable ? 'reachable' : 'offline'}
+              Shop API {health.reachable ? 'ready' : 'offline'}
             </span>
-            <span className="badge badge-muted" style={{ marginLeft: 8 }}>{health.core_url}</span>
+            
           </p>
         )}
         {health?.message && (
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{health.message}</p>
         )}
         <button type="button" className="btn btn-secondary" onClick={refreshHealth} style={{ marginTop: 8 }}>
-          Re-probe Core
+          Recheck connection
         </button>
       </div>
 
@@ -149,10 +149,10 @@ export default function Connectors() {
         </div>
         <div className="btn-row">
           <button type="button" className="btn" disabled={!!loading} onClick={() => run('write')}>
-            {loading === 'write' ? 'Writing…' : 'Write SEO via Core'}
+            {loading === 'write' ? 'Writing…' : 'Publish SEO'}
           </button>
           <button type="button" className="btn btn-secondary" disabled={!!loading} onClick={() => run('verify')}>
-            {loading === 'verify' ? 'Verifying…' : 'Verify via Core'}
+            {loading === 'verify' ? 'Verifying…' : 'Verify publish'}
           </button>
         </div>
         {error && <p className="error-msg">{error}</p>}
@@ -160,7 +160,7 @@ export default function Connectors() {
 
       {result && (
         <div className="card">
-          <h3>Core response</h3>
+          <h3>Publish result</h3>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
             <span className={`badge ${result.ok ? 'badge-success' : 'badge-warn'}`}>
               {result.ok ? 'OK' : 'Not applied'}

@@ -7,7 +7,7 @@ export default function Packs() {
   const [topic, setTopic] = useState('Arkiphere Cloud')
   const [url, setUrl] = useState('https://arkiphere.cloud')
   const [businessName, setBusinessName] = useState('Arkiphere Cloud')
-  const [context, setContext] = useState('Odoo on Docker/Kubernetes, Community and Enterprise, free trial, AI billing.')
+  const [context, setContext] = useState('Odoo PaaS, Community and Enterprise, free trial, AI billing.')
   const [health, setHealth] = useState(null)
   const [pack, setPack] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -44,17 +44,16 @@ export default function Packs() {
   return (
     <>
       <div className="card">
-        <h3>Ollama pack — AEO + SEO</h3>
+        <h3>AEO + SEO pack</h3>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-          Generate a publish pack and a human-readable tree resume. Uses Ollama when healthy, otherwise
-          the generator heuristics.
+          Generate a publish pack and a human-readable tree resume for your site.
         </p>
         {health && (
           <p style={{ marginBottom: '1rem' }}>
             <span className={`badge ${health.status === 'ok' ? 'badge-success' : 'badge-warn'}`}>
-              Ollama {health.status}
+              Pack service {health.status}
             </span>
-            {health.model && <span className="badge badge-muted" style={{ marginLeft: 8 }}>{health.model}</span>}
+            
           </p>
         )}
         <form onSubmit={handleSubmit}>
@@ -86,8 +85,8 @@ export default function Packs() {
           <div className="card">
             <h3>Tree list resume</h3>
             <div className="btn-row" style={{ marginBottom: '0.75rem' }}>
-              <span className="badge badge-muted">backend: {pack.backend}</span>
-              {pack.model && <span className="badge badge-muted">{pack.model}</span>}
+              <span className="badge badge-muted">pack ready</span>
+              
               <button type="button" className="btn btn-secondary" onClick={copyResume}>Copy resume</button>
             </div>
             <TreeList nodes={pack.tree} rootLabel={pack.topic} />
