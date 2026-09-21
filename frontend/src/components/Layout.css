@@ -1,8 +1,9 @@
 .layout {
-  
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 .header {
@@ -11,17 +12,19 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  flex-shrink: 0;
 }
 
 .header-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0.35rem 1.25rem;
+  padding: 0.2rem 0.85rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.65rem;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  min-height: 2.25rem;
 }
 
 .logo {
@@ -35,14 +38,15 @@
 }
 
 .logo-mark {
-  height: 36px;
+  height: 28px;
   width: auto;
   display: block;
+  flex-shrink: 0;
 }
 
 .logo-text {
   font-weight: 700;
-  font-size: 1.02rem;
+  font-size: 0.92rem;
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
