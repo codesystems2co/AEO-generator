@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 from fastapi import HTTPException
 
 from app.services.entitlement_service import consume
+from app.services.i18n_copy import t
 
 
 def keep_https(value: Optional[str]) -> str:
@@ -58,27 +59,13 @@ def bind_license_site(
             status_code=403,
             detail="Falta la clave de activación. El generador no acepta un sitio sin pedido.",
         )
-    requested = keep_https(requested_site) if requested_site else ""
-    data = consume(key, github_login=github_login, site=requested or None)
+    data = consume(key, github_login=github_login, site=None)
     order_site = keep_https(data.get("aeo_site_url"))
-    if requested and order_site and not hosts_match(requested, order_site):
-        raise HTTPException(
-            status_code=403,
-            detail=(
-                "El sitio no coincide con el pedido confirmado. "
-                f"Usa {normalize_host(order_site) or 'el hostname del pedido'}."
-            ),
-        )
-    if requested and not order_site and data.get("allowed") is not True:
-        raise HTTPException(
-            status_code=403,
-            detail="El sitio no coincide con el pedido confirmado.",
-        )
     if data.get("allowed") is not True:
         raise HTTPException(
             status_code=403,
             detail=data.get("message")
-            or "No hay un pedido confirmado de Search Engine Optimizator.",
+            or t("es", "entitlement.noOrder"),
         )
     if not order_site:
         raise HTTPException(

@@ -17,7 +17,7 @@ GSC_SCOPES = (
     "https://www.googleapis.com/auth/webmasters",
 )
 
-_oauth_state: Dict[str, str] = {}
+_oauth_ctx: Dict[str, Any] = {}
 _oauth_tokens: Dict[str, Any] = {}
 _session_sa: Dict[str, Any] = {}
 
@@ -60,6 +60,24 @@ def auth_mode() -> str:
 
 def oauth_connected() -> bool:
     return bool(_oauth_tokens.get("access_token"))
+
+
+async def revoke_oauth() -> Dict[str, Any]:
+    token = (_oauth_tokens.get("access_token") or _oauth_tokens.get("refresh_token") or "").strip()
+    google_ok = True
+    if token:
+        try:
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                r = await client.post(
+                    "https://oauth2.googleapis.com/revoke",
+                    data={"token": token},
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                )
+                google_ok = r.status_code < 400 or r.status_code == 400
+        except Exception:
+            google_ok = False
+    _oauth_tokens.clear()
+    return {"ok": True, "revoked": True, "google": google_ok, "connected": False}
 
 
 def status() -> Dict[str, Any]:
@@ -121,14 +139,26 @@ def set_session_sa(raw_json: str) -> Dict[str, Any]:
     }
 
 
-def start_oauth() -> Dict[str, Any]:
+def start_oauth(
+    license_key: Optional[str] = None,
+    site: Optional[str] = None,
+    github_login: Optional[str] = None,
+) -> Dict[str, Any]:
     if not settings.google_oauth_configured:
         return {
             "ok": False,
             "error": "OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET on the generator API.",
         }
     state = secrets.token_urlsafe(24)
-    _oauth_state["current"] = state
+    _oauth_ctx.clear()
+    _oauth_ctx.update(
+        {
+            "state": state,
+            "license": (license_key or "").strip(),
+            "site": (site or "").strip(),
+            "github_login": (github_login or "").strip(),
+        }
+    )
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
         "redirect_uri": settings.GOOGLE_REDIRECT_URI,
@@ -147,10 +177,24 @@ def start_oauth() -> Dict[str, Any]:
     }
 
 
+def oauth_return_query(gsc_flag: str = "connected") -> str:
+    params = {"gsc": gsc_flag}
+    license_key = (_oauth_ctx.get("license") or "").strip()
+    site = (_oauth_ctx.get("site") or "").strip()
+    github_login = (_oauth_ctx.get("github_login") or "").strip()
+    if license_key:
+        params["license"] = license_key
+    if site:
+        params["site"] = site
+    if github_login:
+        params["user"] = github_login
+    return urlencode(params)
+
+
 async def finish_oauth(code: str, state: str) -> Dict[str, Any]:
     if not code:
         return {"ok": False, "error": "Missing code"}
-    expected = _oauth_state.get("current")
+    expected = _oauth_ctx.get("state")
     if expected and state and state != expected:
         return {"ok": False, "error": "OAuth state mismatch"}
     if not settings.google_oauth_configured:
@@ -170,7 +214,13 @@ async def finish_oauth(code: str, state: str) -> Dict[str, Any]:
                 return {"ok": False, "error": data.get("error_description") or data.get("error") or r.text[:200]}
             _oauth_tokens.clear()
             _oauth_tokens.update(data)
-            return {"ok": True, "token_type": data.get("token_type"), "expires_in": data.get("expires_in")}
+            return {
+                "ok": True,
+                "token_type": data.get("token_type"),
+                "expires_in": data.get("expires_in"),
+                "license": _oauth_ctx.get("license"),
+                "site": _oauth_ctx.get("site"),
+            }
     except Exception as exc:
         return {"ok": False, "error": str(exc)[:200]}
 

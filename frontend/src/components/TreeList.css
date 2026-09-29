@@ -14,6 +14,16 @@
   margin-bottom: 0.4rem;
 }
 
+.tree-root.is-solving {
+  display: inline-block;
+  color: var(--solving);
+  background: var(--solving-bg);
+  border: 1px solid var(--solving-border);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  font-weight: 700;
+}
+
 .tree {
   list-style: none;
   margin: 0;
@@ -39,6 +49,13 @@
 .tree-label {
   color: var(--text);
   font-weight: 600;
+}
+
+.tree-label.is-solving {
+  color: var(--solving);
+  background: var(--solving-bg);
+  border-radius: 4px;
+  padding: 0 0.3rem;
 }
 
 .tree-value {

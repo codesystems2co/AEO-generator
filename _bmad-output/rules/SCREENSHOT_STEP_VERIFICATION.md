@@ -2,6 +2,16 @@
 
 Each UI change that a user can see must be proven with a screenshot of the **live** surface, not a mock.
 
+## Live load gate (mandatory)
+
+The product must **boot** after every API/UI copy. Fail if:
+
+- `http://2.28.106.22:8642/health` does not return 200 within 8s
+- `http://2.28.106.22:9012/?license=…&site=…` stays on “Comprobando pedido” or a white `#root`
+- A pod file was overwritten with a workspace module that is missing live imports (`get_job`, `record_job`, …)
+
+Restore from the running image if health dies. Then capture the step.
+
 ## Required per step
 - One PNG of the actual screen after the action.
 - Caption: what was clicked / typed, and the result.

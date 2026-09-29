@@ -19,6 +19,7 @@ from app.routers import (
     wizard,
     entitlement,
     connection,
+    catalog,
 )
 
 @asynccontextmanager
@@ -59,6 +60,7 @@ app.include_router(connectors.router, prefix="/api/connectors", tags=["Connector
 app.include_router(wizard.router, prefix="/api/wizard", tags=["Wizard"])
 app.include_router(entitlement.router, prefix="/api/entitlement", tags=["Entitlement"])
 app.include_router(connection.router, prefix="/api/connection", tags=["Connection"])
+app.include_router(catalog.router, prefix="/api/catalog", tags=["Catalog"])
 
 
 @app.get("/")

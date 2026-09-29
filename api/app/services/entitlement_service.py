@@ -11,9 +11,17 @@ from typing import Any, Dict, List, Optional
 from xmlrpc import client as xmlrpc_client
 
 from app.config import settings
+from app.services.i18n_copy import t
 
 CONFIRMED_STATES = ("sale", "done")
-PRODUCT_MARKERS = ("search engine optimizator", "optimizator")
+PRODUCT_MARKERS = (
+    "search engine optimizator",
+    "optimizator",
+    "aeo / seo and search optimization",
+    "aeo / seo and optimizador de busqueda",
+    "aeo / seo y optimizador de búsqueda",
+    "aeo / seo y optimizador de busqueda",
+)
 _lock = threading.Lock()
 
 
@@ -170,7 +178,7 @@ def register_confirmed(
             {
                 "name": name,
                 "state": "sale",
-                "product": "Search Engine Optimizator",
+                "product": t("es", "brand"),
                 "source": source,
             }
         )
@@ -239,7 +247,7 @@ def check(github_login: Optional[str] = None) -> Dict[str, Any]:
             "partner_name": partner.get("partner_name") or ledger.get("partner_name") or login,
             "sale_order_name": chosen.get("name"),
             "sale_order_state": chosen.get("state") or "sale",
-            "message": f"Pedido confirmado {chosen.get('name')}. Puedes usar Search Engine Optimizator.",
+            "message": t("es", "entitlement.confirmed", order=chosen.get("name") or ""),
             "cta_url": None,
             "cta_label": None,
             "odoo_error": odoo_error,
@@ -252,7 +260,7 @@ def check(github_login: Optional[str] = None) -> Dict[str, Any]:
         "partner_name": partner.get("partner_name") or ledger.get("partner_name") or login,
         "sale_order_name": None,
         "sale_order_state": None,
-        "message": "No hay un pedido confirmado de Search Engine Optimizator. Crea y confirma el pedido en Arkiphere para continuar.",
+        "message": t("es", "entitlement.noOrder"),
         "cta_url": settings.ARKIPHERE_SHOP_URL,
         "cta_label": "Crear o confirmar pedido en Arkiphere",
         "login_url": settings.ARKIPHERE_LOGIN_URL,
@@ -276,7 +284,7 @@ def _blocked(key: Optional[str] = None, message: Optional[str] = None, error: Op
         "github_login": None,
         "open_url": None,
         "message": message
-        or "No hay un pedido confirmado de Search Engine Optimizator. Crea y confirma el pedido en Arkiphere para continuar.",
+        or t("es", "entitlement.noOrder"),
         "cta_url": settings.ARKIPHERE_SHOP_URL,
         "cta_label": "Crear o confirmar pedido en Arkiphere",
         "login_url": settings.ARKIPHERE_LOGIN_URL,
@@ -298,8 +306,7 @@ def consume(
     payload = {"key": license_key}
     if login:
         payload["github_login"] = login
-    if site:
-        payload["site"] = site.strip()
+    # License is source of truth. A typed/wrong ?site= must not fail consume.
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         f"{base}/aeo/license/consume/http",
@@ -341,7 +348,7 @@ def consume(
         "partner_id": _clean(raw.get("partner_id")),
         "github_login": _clean(raw.get("github_login")) or login,
         "open_url": _clean(raw.get("open_url")),
-        "message": f"Pedido confirmado {sale_order_name}. Puedes usar Search Engine Optimizator.",
+        "message": t("es", "entitlement.confirmed", order=sale_order_name or ""),
         "cta_url": None,
         "cta_label": None,
         "login_url": settings.ARKIPHERE_LOGIN_URL,

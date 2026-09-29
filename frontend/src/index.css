@@ -11,6 +11,9 @@
   --btn-on-accent: #ffffff;
   --success: #059669;
   --warn: #d97706;
+  --solving: #c2410c;
+  --solving-bg: #ffedd5;
+  --solving-border: #fb923c;
   --error: #dc2626;
   --radius: 10px;
   --font: 'DM Sans', system-ui, sans-serif;
@@ -31,6 +34,9 @@
   --btn-on-accent: #0c1218;
   --success: #34d399;
   --warn: #fbbf24;
+  --solving: #fdba74;
+  --solving-bg: rgba(251, 146, 60, 0.18);
+  --solving-border: #f59e0b;
   --error: #f87171;
 }
 

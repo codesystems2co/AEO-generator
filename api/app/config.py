@@ -45,6 +45,8 @@ class Settings(BaseSettings):
             "http://2.28.106.22:9012",
             "http://localhost:5173",
             "http://localhost:9012",
+            "http://arkiphere.cloud",
+            "https://arkiphere.cloud",
         ]
         for item in extra:
             if item not in origins:

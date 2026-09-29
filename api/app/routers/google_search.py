@@ -36,9 +36,21 @@ async def google_readiness(
     return await gsc.readiness(bound["bound_site_url"], mode=req.mode)
 
 
+class OAuthStartBody(BaseModel):
+    license: Optional[str] = None
+    key: Optional[str] = None
+    site: Optional[str] = None
+    github_login: Optional[str] = None
+
+
 @router.post("/oauth/start")
-async def oauth_start():
-    data = gsc.start_oauth()
+async def oauth_start(
+    body: Optional[OAuthStartBody] = None,
+    x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
+):
+    payload = body or OAuthStartBody()
+    lic = extract_license(x_aeo_license, payload.license, payload.key)
+    data = gsc.start_oauth(license_key=lic, site=payload.site, github_login=payload.github_login)
     if not data.get("ok"):
         raise HTTPException(status_code=400, detail=data.get("error") or "OAuth not configured")
     return data
@@ -48,11 +60,17 @@ async def oauth_start():
 async def oauth_callback(code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
     frontend = (settings.FRONTEND_PUBLIC_URL or "http://2.28.106.22:9012").rstrip("/")
     if error:
-        return RedirectResponse(f"{frontend}/?gsc=error&reason={error}")
+        return RedirectResponse(f"{frontend}/?{gsc.oauth_return_query('error')}&reason={error}")
     result = await gsc.finish_oauth(code or "", state or "")
     if not result.get("ok"):
-        return RedirectResponse(f"{frontend}/?gsc=error")
-    return RedirectResponse(f"{frontend}/?gsc=connected")
+        return RedirectResponse(f"{frontend}/?{gsc.oauth_return_query('error')}")
+    return RedirectResponse(f"{frontend}/?{gsc.oauth_return_query('connected')}")
+
+
+@router.post("/oauth/revoke")
+async def oauth_revoke():
+    data = await gsc.revoke_oauth()
+    return {**data, "status": gsc.status()}
 
 
 @router.get("/sites")

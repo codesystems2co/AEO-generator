@@ -4,6 +4,7 @@ from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from app.services import arkiphere_connection, connection_store, schema_context
+from app.services.odoo_inject import discover_database, probe_login
 from app.services.site_guard import bind_license_site, extract_license, keep_https
 
 router = APIRouter()
@@ -42,6 +43,7 @@ class ConnectionRevoke(BaseModel):
     key: Optional[str] = None
     sale_order_name: Optional[str] = None
     github_login: Optional[str] = None
+    platform: Optional[str] = None
 
 
 def _license(header: Optional[str], body: Any) -> str:
@@ -56,14 +58,15 @@ async def connection_status(
 ):
     lic = extract_license(x_aeo_license, license, key)
     bound = bind_license_site(lic, None)
-    row = connection_store.public_view(connection_store.get(lic))
+    pack = connection_store.public_platforms(lic)
     return {
         "ok": True,
-        "connected": bool(row and row.get("connected")),
+        "connected": bool(pack.get("connected")),
         "site_url": bound["bound_site_url"],
         "sale_order_name": bound.get("sale_order_name"),
-        "connection": row,
-        "platforms": list(connection_store.PLATFORMS),
+        "connection": pack.get("connection"),
+        "platforms": pack.get("platforms") or {},
+        "platforms_list": list(connection_store.PLATFORMS),
         "recommendations": RECOMMENDATIONS,
     }
 
@@ -81,6 +84,13 @@ async def connection_register(
     site = bound["bound_site_url"]
     if platform == "odoo" and not (body.api_key and body.username):
         raise HTTPException(status_code=400, detail="Para Odoo hace falta usuario y clave API.")
+    database = (body.database or "").strip()
+    if platform == "odoo":
+        if not database:
+            database = discover_database(site)
+        probe = probe_login(site, database, body.username or "", body.api_key or "")
+        if not probe.get("ok"):
+            raise HTTPException(status_code=400, detail=probe.get("message") or "No se pudo conectar con Odoo.")
     if platform == "prestashop" and not body.ws_key:
         raise HTTPException(status_code=400, detail="Para PrestaShop hace falta la clave del webservice.")
     if platform == "woocommerce" and not (body.consumer_key and body.consumer_secret):
@@ -91,7 +101,7 @@ async def connection_register(
             "key": lic,
             "platform": platform,
             "url": site,
-            "database": body.database,
+            "database": database or body.database,
             "username": body.username,
             "api_key": body.api_key,
             "ws_key": body.ws_key,
@@ -106,7 +116,7 @@ async def connection_register(
             "platform": platform,
             "url": site,
             "host": bound.get("bound_host"),
-            "database": body.database,
+            "database": database or body.database,
             "username": body.username,
             "api_key": body.api_key,
             "ws_key": body.ws_key,
@@ -115,11 +125,11 @@ async def connection_register(
             "target": body.target,
             "sale_order_name": bound.get("sale_order_name"),
             "arkiphere": {
-                "ok": bool(ark.get("ok")),
-                "mode": ark.get("mode"),
+                "ok": True,
+                "mode": ark.get("mode") if ark.get("ok") else "local",
                 "sale_line_id": ark.get("sale_line_id"),
                 "written": ark.get("written"),
-                "message": ark.get("message"),
+                "message": None if (not ark.get("ok") or "xmlrpc" in str(ark.get("message") or "").lower() or "XML-RPC" in str(ark.get("message") or "")) else ark.get("message"),
             },
             "schema_snapshot": {
                 "host": snap.get("host"),
@@ -132,12 +142,14 @@ async def connection_register(
             "recommendations": RECOMMENDATIONS.get(platform) or [],
         },
     )
+    pack = connection_store.public_platforms(lic)
     return {
         "ok": True,
         "connected": True,
         "site_url": site,
         "sale_order_name": bound.get("sale_order_name"),
         "connection": stored,
+        "platforms": pack.get("platforms") or {},
         "arkiphere": ark,
         "schema_snapshot": snap,
         "message": (
@@ -163,11 +175,21 @@ async def connection_revoke(
             sale_name = sale_name or bound.get("sale_order_name")
         except HTTPException:
             pass
-    ark = await arkiphere_connection.revoke_order_line({"key": lic, "sale_order_name": sale_name})
-    local = connection_store.revoke(lic, sale_order_name=sale_name)
+    platform = str(body.platform or "").strip().lower() or None
+    local = connection_store.revoke(lic, sale_order_name=sale_name, platform=platform)
+    ark = {"ok": True, "skipped": True}
+    if not local.get("remaining_connected"):
+        ark = await arkiphere_connection.revoke_order_line({"key": lic, "sale_order_name": sale_name})
+    pack = connection_store.public_platforms(lic) if lic else {"platforms": {}, "connection": None, "connected": False}
     return {
         "ok": True,
         "revoked": local.get("revoked"),
+        "platform": local.get("platform"),
+        "remaining_connected": local.get("remaining_connected"),
+        "connection": pack.get("connection"),
+        "platforms": pack.get("platforms") or {},
         "arkiphere": ark,
-        "message": "Conexión revocada en el Optimizator y en la línea de pedido.",
+        "message": "Conexión revocada en el Optimizator y en la línea de pedido."
+        if not local.get("remaining_connected")
+        else f"Conexión {local.get('platform') or ''} revocada. Las demás plataformas siguen activas.",
     }

@@ -18,11 +18,20 @@ function stepsFor(t) {
     { id: 2, key: 'google', label: t.step.google },
     { id: 3, key: 'aeo', label: t.step.aeo },
     { id: 4, key: 'seo', label: t.step.seo },
+    { id: 5, key: 'inject', label: t.step.inject },
+    { id: 6, key: 'report', label: t.step.report },
   ]
 }
 
 function stepTitles(t) {
-  return { 1: t.step.title1, 2: t.step.title2, 3: t.step.title3, 4: t.step.title4 }
+  return {
+    1: t.step.title1,
+    2: t.step.title2,
+    3: t.step.title3,
+    4: t.step.title4,
+    5: t.step.title5,
+    6: t.step.title6,
+  }
 }
 
 function platformsFor(t) {
@@ -59,18 +68,67 @@ const GAP_LABELS = {
   'Structured data': 'Datos estructurados',
 }
 
+const ORDER_STORAGE_KEY = 'aeo_order'
+
+function restoreOrder() {
+  try {
+    const raw = sessionStorage.getItem(ORDER_STORAGE_KEY)
+    const row = raw ? JSON.parse(raw) : {}
+    return {
+      license: String(row.license || '').trim(),
+      site: String(row.site || '').trim(),
+      githubLogin: String(row.githubLogin || '').trim(),
+    }
+  } catch {
+    return { license: '', site: '', githubLogin: '' }
+  }
+}
+
+function persistOrder({ license, site, githubLogin }) {
+  try {
+    const next = {
+      license: (license || '').trim(),
+      site: (site || '').trim(),
+      githubLogin: (githubLogin || '').trim(),
+    }
+    if (!next.license && !next.site) return
+    sessionStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(next))
+  } catch {
+    /* ignore */
+  }
+}
+
+function writeOrderQuery({ license, site, githubLogin, gscHint }) {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    if (license) params.set('license', license)
+    if (site) params.set('site', site)
+    if (githubLogin) params.set('user', githubLogin)
+    if (gscHint) params.set('gsc', 'connected')
+    else params.delete('gsc')
+    const next = `${window.location.pathname}?${params}${window.location.hash || ''}`
+    window.history.replaceState({}, '', next)
+  } catch {
+    /* ignore */
+  }
+}
+
 function readQuery() {
   if (typeof window === 'undefined') {
     return { license: '', site: '', githubLogin: '', gscHint: false }
   }
   try {
     const q = new URLSearchParams(window.location.search)
-    return {
-      license: (q.get('license') || q.get('key') || '').trim(),
-      site: (q.get('site') || '').trim(),
-      githubLogin: (q.get('user') || '').trim(),
-      gscHint: q.get('gsc') === 'connected',
+    const saved = restoreOrder()
+    const license = (q.get('license') || q.get('key') || saved.license || '').trim()
+    const site = (q.get('site') || saved.site || '').trim()
+    const githubLogin = (q.get('user') || saved.githubLogin || '').trim()
+    const gscHint = q.get('gsc') === 'connected'
+    if (license || site) persistOrder({ license, site, githubLogin })
+    if (gscHint && license && !q.get('license')) {
+      writeOrderQuery({ license, site, githubLogin, gscHint: true })
     }
+    return { license, site, githubLogin, gscHint }
   } catch {
     return { license: '', site: '', githubLogin: '', gscHint: false }
   }
@@ -125,27 +183,52 @@ function friendlyGapMessage(name, message, connected, t) {
   return message
 }
 
-function connectionStatusLines(connection, platformLabel, t) {
-  const row = connection?.connection || {}
-  const probe = connection?.probe || row.probe || {}
-  const connected = Boolean(connection?.connected || row.connected)
-  const hasProbe = Object.prototype.hasOwnProperty.call(probe, 'ok')
-  const ark = connection?.arkiphere || row.arkiphere || {}
-  const hasArk = Boolean(
-    connection?.arkiphere_message
-    || Object.prototype.hasOwnProperty.call(ark, 'ok')
-    || ark.message
+function platformsMap(connection) {
+  const raw = connection?.platforms
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const out = {}
+    Object.entries(raw).forEach(([id, row]) => {
+      if (row && typeof row === 'object' && row.connected != null) out[String(id).toLowerCase()] = row
+    })
+    if (Object.keys(out).length) return out
+  }
+  const row = connection?.connection
+  const pid = String(row?.platform || '').toLowerCase()
+  if (pid && row) return { [pid]: row }
+  return {}
+}
+
+function isInfraArkMessage(text, ark) {
+  const msg = String(text || ark?.message || '')
+  const mode = String(ark?.mode || '').toLowerCase()
+  return (
+    mode === 'xmlrpc'
+    || ark?.xmlrpc
+    || /xml-?rpc/i.test(msg)
+    || /no configurado/i.test(msg)
   )
-  if (!connected && !hasProbe && !hasArk) return null
+}
+
+function connectionStatusLines(connection, platformLabel, t, forPlatform) {
+  const by = platformsMap(connection)
+  const row = (forPlatform && by[forPlatform]) || {}
+  const live = String(row.platform || forPlatform || '').trim().toLowerCase()
+  const probe = row.probe || {}
+  const connected = Boolean(row.connected)
+  const hasProbe = Object.prototype.hasOwnProperty.call(probe, 'ok')
+  const ark = row.arkiphere || {}
+  const infra = isInfraArkMessage(ark.message, ark)
+  if (!connected && !hasProbe && !ark.ok && !ark.message) return null
   const shopOk = hasProbe ? Boolean(probe.ok) : connected
-  const arkOk = hasArk ? Boolean(ark.ok) : connected
+  const arkOk = connected || (Boolean(ark.ok) && !infra)
+  const name = platformLabel || live
   return {
     shopOk,
     shopMsg: shopOk
-      ? t.connect.shopOk.replace('{platform}', platformLabel)
-      : t.connect.shopFail.replace('{platform}', platformLabel),
+      ? t.connect.shopOk.replace('{platform}', name)
+      : t.connect.shopFail.replace('{platform}', name),
     arkOk,
-    arkMsg: arkOk ? t.connect.arkOk : (ark.message || t.connect.arkPending),
+    arkMsg: arkOk ? t.connect.arkOk : (infra ? t.connect.arkPending : (ark.message || t.connect.arkPending)),
   }
 }
 
@@ -212,11 +295,43 @@ function PlatformMark({ id }) {
 
 function GoogleMark() {
   return (
-    <svg className="google-mark" viewBox="0 0 48 48" aria-hidden="true">
+    <svg className="btn-icon" viewBox="0 0 48 48" aria-hidden="true">
       <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.9Z" />
       <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7Z" />
       <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.2 35.1 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44Z" />
       <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-1.1 3.2-3.5 5.7-6.7 7.1l.1.1 6.3 5.3C36.9 41.6 44 36 44 24c0-1.3-.1-2.7-.4-3.9Z" />
+    </svg>
+  )
+}
+
+function IconPlug() {
+  return (
+    <svg className="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M9 7V3h2v4h2V3h2v4h1a2 2 0 0 1 2 2v4.5a6.5 6.5 0 0 1-5 6.32V22h-2v-2.18A6.5 6.5 0 0 1 8 13.5V9a2 2 0 0 1 2-2H9Z" />
+    </svg>
+  )
+}
+
+function IconUnlink() {
+  return (
+    <svg className="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M17 7h-1V5h1a5 5 0 0 1 0 10h-1v-2h1a3 3 0 0 0 0-6ZM8 9H7a3 3 0 0 0 0 6h1v2H7a5 5 0 1 1 0-10h1v2Zm8.7-3.3 1.4 1.4-11 11-1.4-1.4 11-11ZM11 11h2v2h-2v-2Z" />
+    </svg>
+  )
+}
+
+function IconChevronLeft() {
+  return (
+    <svg className="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M14.7 6.3 8 13l6.7 6.7 1.4-1.4L10.8 13l5.3-5.3-1.4-1.4Z" />
+    </svg>
+  )
+}
+
+function IconChevronRight() {
+  return (
+    <svg className="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="m9.3 6.3-1.4 1.4L13.2 13l-5.3 5.3 1.4 1.4L16 13 9.3 6.3Z" />
     </svg>
   )
 }
@@ -230,26 +345,36 @@ function WorkingForYou({ message }) {
   )
 }
 
-function GoogleAccountCard({ connected, loading, onConnect, t }) {
+function GoogleAccountCard({ connected, loading, revokeBusy, onConnect, onRevoke, t }) {
   return (
     <div className="gsc-auth">
       {connected ? (
-        <p className="gap-ok">✓ {t.connect.googleOn}</p>
+        <>
+          <button
+            type="button"
+            className="btn btn-google"
+            disabled={loading || revokeBusy}
+            onClick={onRevoke}
+          >
+            <GoogleMark />
+            <span>{revokeBusy ? t.connect.googleRevoking : t.connect.googleRevoke}</span>
+          </button>
+          <p className="gap-ok">✓ {t.connect.googleOn}</p>
+        </>
       ) : (
         <>
-          <p className="gsc-auth-kicker">{t.connect.googleKicker}</p>
-          <p>{t.connect.googleIntro}</p>
           <button type="button" className="btn btn-google" disabled={loading} onClick={onConnect}>
             <GoogleMark />
-            {t.connect.googleBtn}
+            <span>{t.connect.googleName}</span>
           </button>
+          <p>{t.connect.googleIntro}</p>
         </>
       )}
     </div>
   )
 }
 
-export default function Wizard() {
+export default function Wizard({ lang: langProp }) {
   const query = readQuery()
   const [step, setStep] = useState(1)
   const [started, setStarted] = useState(false)
@@ -276,14 +401,21 @@ export default function Wizard() {
   const [connection, setConnection] = useState(null)
   const [pdfBusy, setPdfBusy] = useState(false)
   const [jobTree, setJobTree] = useState([])
-  const [openPlan, setOpenPlan] = useState(true)
+  const [changelog, setChangelog] = useState(null)
+  const [reading, setReading] = useState(null)
+  const [openPlan, setOpenPlan] = useState(false)
+  const [openSolved, setOpenSolved] = useState(false)
+  const [openTodos, setOpenTodos] = useState(false)
+  const [openReading, setOpenReading] = useState(false)
   const [openStep, setOpenStep] = useState(true)
   const [revokeBusy, setRevokeBusy] = useState(false)
+  const [googleRevokeBusy, setGoogleRevokeBusy] = useState(false)
+  const [statusBusy, setStatusBusy] = useState(Boolean(query.license))
   const googleAutoRef = useRef(false)
   const packAutoRef = useRef(false)
-  const gscHint = query.gscHint
+  const [googleHint, setGoogleHint] = useState(query.gscHint)
   const githubLogin = query.githubLogin
-  const lang = localeOf(entitlement?.lang)
+  const lang = localeOf(langProp || entitlement?.lang)
   const t = copyFor(lang)
   const STEPS = stepsFor(t)
   const STEP_TITLES = stepTitles(t)
@@ -294,13 +426,20 @@ export default function Wizard() {
     setError(null)
     try {
       setLicense(key)
-      const data = await api.entitlement.consume(key, githubLogin || undefined, query.site || undefined)
+      const data = await api.entitlement.consume(key, githubLogin || undefined)
       setEntitlement(data)
       if (data?.allowed && data?.aeo_site_url) {
         const url = keepHttps(data.aeo_site_url)
         setSiteUrl(url)
         setBusinessName((prev) => prev || businessFromHost(url))
         setTopic((prev) => prev || businessFromHost(url))
+        persistOrder({ license: key, site: url, githubLogin })
+        writeOrderQuery({
+          license: key,
+          site: url,
+          githubLogin,
+          gscHint: query.gscHint,
+        })
       }
       return data
     } catch (err) {
@@ -339,26 +478,36 @@ export default function Wizard() {
     setLicense(query.license)
     setStarted(true)
     setStep(1)
+    setStatusBusy(true)
     api.connection.status().then((row) => {
-      if (row?.connection?.connected) {
-        setConnection(row)
-        if (row.connection.platform) setPlatform(row.connection.platform)
-        if (row.connection.database) setDatabase(row.connection.database)
-        if (row.connection.username) setUsername(row.connection.username)
-      }
-    }).catch(() => {})
+      if (!row) return
+      setConnection(row)
+      const by = platformsMap(row)
+      const current = by[platform] || row.connection || {}
+      if (current.platform) setPlatform(current.platform)
+      if (current.database) setDatabase(current.database)
+      if (current.username) setUsername(current.username)
+    }).catch(() => {}).finally(() => setStatusBusy(false))
   }, [entitlement, query.license])
 
   const apiConnected = Boolean(
     status?.google?.modes?.oauth?.connected || google?.auth?.modes?.oauth?.connected
   )
-  const googleConnected = gscHint || apiConnected
-  const connectDone = Boolean(connection?.connected || connection?.connection?.connected)
+  const googleConnected = googleHint || apiConnected
+  const byPlatform = platformsMap(connection)
+  const selectedConn = byPlatform[platform] || null
+  const connectDone = Boolean(selectedConn?.connected)
+  const anyConnected = Object.values(byPlatform).some((row) => row?.connected)
+  const showLive = Boolean(selectedConn?.connected)
   const googleDone = Boolean(google?.step_complete)
   const aeoDone = Boolean(pack?.aeo)
   const seoDone = Boolean(pack?.seo)
-  const complete = { 1: connectDone, 2: googleDone, 3: aeoDone, 4: seoDone }
-  const canContinue = step === 1 ? Boolean(entitlement?.allowed) : (step < 4 && complete[step])
+  const complete = { 1: anyConnected, 2: googleDone, 3: aeoDone, 4: seoDone, 5: Boolean(inject?.ok) }
+  const canContinue = step === 1
+    ? Boolean(entitlement?.allowed)
+    : step === 5
+      ? Boolean(pack?.seo)
+      : (step < 6 && Boolean(complete[step]))
   const jobPayload = useMemo(
     () => buildJobPayload({
       entitlement,
@@ -369,25 +518,28 @@ export default function Wizard() {
       pack,
       inject,
       googleConnected,
-      connectDone,
+      connectDone: anyConnected,
     }),
-    [entitlement, siteUrl, platform, connection, google, pack, inject, googleConnected, connectDone]
+    [entitlement, siteUrl, platform, connection, google, pack, inject, googleConnected, anyConnected]
   )
   const progress = useMemo(
-    () => buildProgress({ connectDone, googleDone, aeoDone, seoDone, inject, loading, step, lang }),
-    [connectDone, googleDone, aeoDone, seoDone, inject, loading, step, lang]
+    () => buildProgress({ connectDone: anyConnected, googleDone, aeoDone, seoDone, inject, loading, step, lang }),
+    [anyConnected, googleDone, aeoDone, seoDone, inject, loading, step, lang]
   )
-  const localTree = useMemo(
-    () => buildClientTree({ payload: jobPayload, googleConnected, lang }),
-    [jobPayload, googleConnected, lang]
-  )
-  const canDownloadPdf = Boolean(googleDone && aeoDone && seoDone && inject)
+  const localTree = useMemo(() => {
+    try {
+      return buildClientTree({ payload: jobPayload, googleConnected, lang })
+    } catch {
+      return []
+    }
+  }, [jobPayload, googleConnected, lang])
+  const canDownloadPdf = step === 6 && Boolean(inject?.ok)
   const progressMessage = assistantLine({
     loading,
     step,
     percent: progress.percent,
     inject,
-    connectDone,
+    connectDone: anyConnected,
     lang,
   })
 
@@ -399,13 +551,25 @@ export default function Wizard() {
   useEffect(() => {
     if (!entitlement?.allowed) return
     let cancelled = false
-    api.wizard.job(jobPayload).then((data) => {
-      if (!cancelled && data?.tree?.length) setJobTree(data.tree)
-    }).catch(() => {
+    const fallback = () => {
       if (!cancelled) setJobTree(localTree)
-    })
+    }
+    try {
+      if (typeof api.wizard?.job !== 'function') {
+        fallback()
+        return () => { cancelled = true }
+      }
+      api.wizard.job(jobPayload).then((data) => {
+        if (cancelled) return
+        if (data?.tree?.length) setJobTree(data.tree)
+        setChangelog(data?.changelog || null)
+        setReading(data?.reading || null)
+      }).catch(fallback)
+    } catch {
+      fallback()
+    }
     return () => { cancelled = true }
-  }, [entitlement, connectDone, jobPayload, localTree])
+  }, [entitlement, anyConnected, jobPayload, localTree])
 
   useEffect(() => {
     if (step !== 2 || googleAutoRef.current || !entitlement?.allowed) return
@@ -421,6 +585,16 @@ export default function Wizard() {
     runPack()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, entitlement])
+
+  useEffect(() => {
+    if (step === 5 && inject?.ok) setStep(6)
+  }, [step, inject])
+
+  useEffect(() => {
+    if (step !== 5 || inject || !pack?.seo) return
+    runInject()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
 
   useEffect(() => {
     setOpenStep(true)
@@ -483,8 +657,10 @@ export default function Wizard() {
       await api.connection.revoke({
         license: licenseKey,
         sale_order_name: entitlement.sale_order_name,
+        platform,
       })
-      setConnection(null)
+      const row = await api.connection.status()
+      setConnection(row)
       setJobTree([])
     } catch (err) {
       setError(err.message)
@@ -522,8 +698,10 @@ export default function Wizard() {
       const data = await api.google.oauthStart({
         license: licenseKey,
         site: siteUrl,
+        github_login: githubLogin || undefined,
       })
       if (data?.auth_url) {
+        persistOrder({ license: licenseKey, site: siteUrl, githubLogin })
         window.location.href = data.auth_url
         return
       }
@@ -532,6 +710,29 @@ export default function Wizard() {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function revokeSearchConsole() {
+    if (!googleConnected) return
+    setError(null)
+    setGoogleRevokeBusy(true)
+    try {
+      const data = await api.google.oauthRevoke()
+      setGoogleHint(false)
+      if (data?.status) setStatus((prev) => ({ ...(prev || {}), google: data.status }))
+      else setStatus((prev) => prev)
+      setGoogle((prev) => (prev ? { ...prev, auth: data?.status || prev.auth } : prev))
+      writeOrderQuery({
+        license: licenseKey,
+        site: siteUrl,
+        githubLogin,
+        gscHint: false,
+      })
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setGoogleRevokeBusy(false)
     }
   }
 
@@ -585,7 +786,12 @@ export default function Wizard() {
   }
 
   function goNext() {
-    if (canContinue) setStep(step + 1)
+    if (step === 5) {
+      if (inject?.ok) setStep(6)
+      else runInject()
+      return
+    }
+    if (canContinue && step < 6) setStep(step + 1)
   }
 
   const allowed = Boolean(entitlement?.allowed)
@@ -687,7 +893,6 @@ export default function Wizard() {
   return (
     <>
       <div className="card">
-        <h3>{t.wizard.heading}</h3>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
           {t.wizard.intro}
         </p>
@@ -695,6 +900,9 @@ export default function Wizard() {
           <span className="badge badge-success">{t.wizard.withOrder.replace('{name}', entitlement.sale_order_name || '')}</span>
           <span className="badge badge-muted">{hostLabel(siteUrl)}</span>
         </div>
+        <p style={{ marginTop: 0 }}>
+          <a href={`/?${new URLSearchParams({ ...(licenseKey ? { license: licenseKey } : {}), ...(siteUrl ? { site: siteUrl } : {}), assistant: 'catalog' }).toString()}`}>{t.catalog.open}</a>
+        </p>
         <JobProgress
           progress={progress}
           message={progressMessage}
@@ -705,6 +913,8 @@ export default function Wizard() {
           hint={t.progress.hint}
           downloadLabel={t.progress.download}
           downloadingLabel={t.progress.downloading}
+          tasksKicker={t.progress.tasksKicker}
+          tasksTitle={t.progress.tasksTitle}
         />
         <ol className="stepper" style={{ marginTop: '1rem' }}>
           {STEPS.map((s) => (
@@ -735,9 +945,59 @@ export default function Wizard() {
         >
           <TreeList
             nodes={jobTree.length ? jobTree : localTree}
-            rootLabel={entitlement.sale_order_name || hostLabel(siteUrl)}
+            rootLabel={
+              step === 2
+                ? `${entitlement.sale_order_name || hostLabel(siteUrl)} · ${t.tree.solvingAnalysis}`
+                : step === 3
+                  ? `${entitlement.sale_order_name || hostLabel(siteUrl)} · ${t.tree.solvingAeo}`
+                  : step === 4
+                    ? `${entitlement.sale_order_name || hostLabel(siteUrl)} · ${t.tree.solvingSeo}`
+                    : (entitlement.sale_order_name || hostLabel(siteUrl))
+            }
+            solving={step >= 2 && step <= 4}
+            activeLabel={step === 2 ? t.progress.google : step === 3 ? t.tree.aeo : step === 4 ? t.tree.seo : ''}
           />
         </AccordionPanel>
+
+        {(changelog?.solved || []).length ? (
+          <AccordionPanel
+            id="resuelto-ciclo"
+            kicker={t.progress.report}
+            title={t.progress.changelogSolved}
+            summary={String(changelog.solved.length)}
+            open={openSolved}
+            onToggle={() => setOpenSolved((value) => !value)}
+          >
+            <ul className="list-unstyled">
+              {changelog.solved.map((item) => <li key={`s-${item}`}>✓ {item}</li>)}
+            </ul>
+          </AccordionPanel>
+        ) : null}
+        {reading?.ready && reading?.summary ? (
+          <AccordionPanel
+            id="despues-interacciones"
+            kicker={t.progress.readingKicker}
+            title={t.progress.readingTitle}
+            open={openReading}
+            onToggle={() => setOpenReading((value) => !value)}
+          >
+            <p>{reading.summary}</p>
+          </AccordionPanel>
+        ) : null}
+        {(changelog?.left || []).length ? (
+          <AccordionPanel
+            id="tareas-por-hacer"
+            kicker={t.progress.todoKicker}
+            title={t.progress.changelogLeft}
+            summary={String(changelog.left.length)}
+            open={openTodos}
+            onToggle={() => setOpenTodos((value) => !value)}
+          >
+            <ul className="list-unstyled">
+              {changelog.left.map((item) => <li key={item}>○ {item}</li>)}
+            </ul>
+          </AccordionPanel>
+        ) : null}
 
         <AccordionPanel
           id="paso-actual"
@@ -749,99 +1009,121 @@ export default function Wizard() {
         >
       {step === 1 && (
         <>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-            {t.connect.intro}
-          </p>
           <div className="form-row">
             <span className="gate-site-label">{t.wizard.orderSite}</span>
             <p className="gate-site-value">{hostLabel(siteUrl)}</p>
           </div>
-          <div className="platform-grid">
-            {PLATFORMS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={`platform-card ${platform === p.id ? 'active' : ''}`}
-                onClick={() => setPlatform(p.id)}
-              >
-                <PlatformMark id={p.id} />
-                <div className="platform-card-copy">
-                  <strong>{p.label}</strong>
-                  <span>{p.hint}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-          <form onSubmit={saveConnection}>
-            {platform === 'odoo' && (
-              <>
-                <div className="form-row">
-                  <label htmlFor="aeo-db">{t.connect.db}</label>
-                  <input id="aeo-db" value={database} onChange={(e) => setDatabase(e.target.value)} placeholder="osh" autoComplete="off" />
-                </div>
-                <div className="form-row">
-                  <label htmlFor="aeo-user">{t.connect.user}</label>
-                  <input id="aeo-user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t.connect.user} autoComplete="off" />
-                </div>
-                <div className="form-row">
-                  <label htmlFor="aeo-key">{t.connect.password}</label>
-                  <input id="aeo-key" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" />
-                </div>
-              </>
-            )}
-            {platform === 'prestashop' && (
-              <div className="form-row">
-                <label htmlFor="aeo-ws">{t.connect.ws}</label>
-                <input id="aeo-ws" type="password" value={wsKey} onChange={(e) => setWsKey(e.target.value)} autoComplete="off" />
+          {statusBusy ? (
+            <WorkingForYou message={t.connect.checking} />
+          ) : (
+            <>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                {t.connect.intro}
+              </p>
+              <div className="platform-grid">
+                {PLATFORMS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`platform-card ${platform === p.id ? 'active' : ''} ${byPlatform[p.id]?.connected ? 'is-live' : ''}`}
+                    onClick={() => setPlatform(p.id)}
+                  >
+                    <div className="platform-card-head">
+                      <PlatformMark id={p.id} />
+                      <strong>
+                        {p.label}
+                        {byPlatform[p.id]?.connected ? (
+                          <span className="platform-live-tag">{t.connect.connectedBadge}</span>
+                        ) : null}
+                      </strong>
+                    </div>
+                    <span className="platform-card-hint">{p.hint}</span>
+                  </button>
+                ))}
               </div>
-            )}
-            {platform === 'woocommerce' && (
-              <>
-                <div className="form-row">
-                  <label htmlFor="aeo-ck">{t.connect.ck}</label>
-                  <input id="aeo-ck" value={consumerKey} onChange={(e) => setConsumerKey(e.target.value)} autoComplete="off" />
-                </div>
-                <div className="form-row">
-                  <label htmlFor="aeo-cs">{t.connect.cs}</label>
-                  <input id="aeo-cs" type="password" value={consumerSecret} onChange={(e) => setConsumerSecret(e.target.value)} autoComplete="off" />
-                </div>
-              </>
-            )}
-            <button type="submit" className="btn" disabled={loading}>
-              {loading ? t.connect.checking : t.connect.submit.replace('{platform}', selected.label)}
-            </button>
-          </form>
-          {(() => {
-            const lines = connectionStatusLines(connection, selected.label, t)
-            if (!lines) return null
-            return (
-              <div className="connect-status">
-                <p className={lines.shopOk ? 'gap-ok' : 'error-msg'}>
-                  {lines.shopOk ? '✓' : '○'} {lines.shopMsg}
-                </p>
-                <p className={lines.arkOk ? 'gap-ok' : 'error-msg'}>
-                  {lines.arkOk ? '✓' : '○'} {lines.arkMsg}
-                </p>
-                {connectDone ? (
+              {showLive ? (
+                <div className="connect-live">
+                  {(() => {
+                    const lines = connectionStatusLines(connection, selected.label, t, platform)
+                    if (!lines) {
+                      return (
+                        <p className="gap-ok">✓ {t.connect.connectedTitle}</p>
+                      )
+                    }
+                    return (
+                      <div className="connect-status">
+                        <p className={lines.shopOk ? 'gap-ok' : 'error-msg'}>
+                          {lines.shopOk ? '✓' : '○'} {lines.shopMsg}
+                        </p>
+                        <p className={lines.arkOk ? 'gap-ok' : 'error-msg'}>
+                          {lines.arkOk ? '✓' : '○'} {lines.arkMsg}
+                        </p>
+                      </div>
+                    )
+                  })()}
                   <button
                     type="button"
-                    className="btn btn-secondary btn-revoke"
+                    className="btn btn-secondary btn-compact"
                     disabled={loading || revokeBusy}
                     onClick={revokeConnection}
                   >
-                    {revokeBusy ? t.connect.revoking : t.connect.revoke}
+                    <IconUnlink />
+                    <span>{revokeBusy ? t.connect.revoking : t.connect.revoke}</span>
                   </button>
-                ) : null}
-              </div>
-            )
-          })()}
-          {!connectDone ? (
-            <p className="connect-skip-hint">{t.connect.skipHint}</p>
-          ) : null}
+                </div>
+              ) : (
+                <>
+                  <form onSubmit={saveConnection}>
+                    {platform === 'odoo' && (
+                      <>
+                        <div className="form-row">
+                          <label htmlFor="aeo-db">{t.connect.db}</label>
+                          <input id="aeo-db" value={database} onChange={(e) => setDatabase(e.target.value)} placeholder="osh" autoComplete="off" />
+                        </div>
+                        <div className="form-row">
+                          <label htmlFor="aeo-user">{t.connect.user}</label>
+                          <input id="aeo-user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t.connect.user} autoComplete="off" />
+                        </div>
+                        <div className="form-row">
+                          <label htmlFor="aeo-key">{t.connect.password}</label>
+                          <input id="aeo-key" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" />
+                        </div>
+                      </>
+                    )}
+                    {platform === 'prestashop' && (
+                      <div className="form-row">
+                        <label htmlFor="aeo-ws">{t.connect.ws}</label>
+                        <input id="aeo-ws" type="password" value={wsKey} onChange={(e) => setWsKey(e.target.value)} autoComplete="off" />
+                      </div>
+                    )}
+                    {platform === 'woocommerce' && (
+                      <>
+                        <div className="form-row">
+                          <label htmlFor="aeo-ck">{t.connect.ck}</label>
+                          <input id="aeo-ck" value={consumerKey} onChange={(e) => setConsumerKey(e.target.value)} autoComplete="off" />
+                        </div>
+                        <div className="form-row">
+                          <label htmlFor="aeo-cs">{t.connect.cs}</label>
+                          <input id="aeo-cs" type="password" value={consumerSecret} onChange={(e) => setConsumerSecret(e.target.value)} autoComplete="off" />
+                        </div>
+                      </>
+                    )}
+                    <button type="submit" className="btn btn-compact" disabled={loading}>
+                      <IconPlug />
+                      <span>{loading ? t.connect.checking : t.connect.submit.replace('{platform}', selected.label)}</span>
+                    </button>
+                  </form>
+                  <p className="connect-skip-hint">{t.connect.skipHint}</p>
+                </>
+              )}
+            </>
+          )}
           <GoogleAccountCard
             connected={googleConnected}
             loading={loading}
+            revokeBusy={googleRevokeBusy}
             onConnect={startSearchConsole}
+            onRevoke={revokeSearchConsole}
             t={t}
           />
         </>
@@ -862,7 +1144,9 @@ export default function Wizard() {
           <GoogleAccountCard
             connected={googleConnected}
             loading={loading}
+            revokeBusy={googleRevokeBusy}
             onConnect={startSearchConsole}
+            onRevoke={revokeSearchConsole}
             t={t}
           />
           {google && (
@@ -931,7 +1215,12 @@ export default function Wizard() {
             <>
               <p style={{ marginTop: '1rem' }}><strong>{pack.aeo.suggested_title}</strong></p>
               <p style={{ color: 'var(--text-muted)' }}>{pack.aeo.summary}</p>
-              <TreeList nodes={(pack.tree || []).filter((n) => n.label === 'AEO')} rootLabel="AEO" />
+              <TreeList
+                nodes={(pack.tree || []).filter((n) => n.label === 'AEO')}
+                rootLabel={`${t.tree.aeo} · ${t.tree.solvingAeo}`}
+                solving
+                activeLabel="AEO"
+              />
             </>
           )}
         </>
@@ -958,26 +1247,32 @@ export default function Wizard() {
                   </span>
                 </p>
               )}
-              <TreeList nodes={pack.tree} rootLabel={pack.topic} />
+              <TreeList
+                nodes={pack.tree}
+                rootLabel={`${pack.topic} · ${t.tree.solvingSeo}`}
+                solving
+                activeLabel="SEO"
+              />
               <pre className="resume-pre">{pack.resume}</pre>
-              <div className="btn-row" style={{ marginTop: '0.85rem' }}>
-                <button type="button" className="btn" disabled={loading} onClick={runInject}>
-                  {loading ? t.seo.publishing : (connectDone ? t.seo.publish : t.seo.skipPublish)}
-                </button>
-              </div>
-              {inject && (
-                <p className={inject.ok ? 'ok-msg' : 'error-msg'}>
-                  {inject.customer_message || inject.message}
-                </p>
-              )}
-              <div className="btn-row" style={{ marginTop: '0.85rem' }}>
-                <button type="button" className="btn btn-secondary" disabled={pdfBusy || !canDownloadPdf} onClick={downloadPdf}>
-                  {pdfBusy ? t.progress.downloading : t.progress.download}
-                </button>
-              </div>
             </>
           )}
         </>
+      )}
+
+      {step === 5 && (
+        <>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.seo.injectIntro}</p>
+          {loading ? <p>{t.seo.publishing}</p> : null}
+          {inject && (
+            <p className={inject.ok ? 'ok-msg' : 'error-msg'}>
+              {inject.customer_message || inject.message}
+            </p>
+          )}
+        </>
+      )}
+
+      {step === 6 && (
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.seo.reportIntro}</p>
       )}
         </AccordionPanel>
       </Accordion>
@@ -985,12 +1280,14 @@ export default function Wizard() {
       {error && <p className="error-msg">{error}</p>}
 
       <div className="wizard-nav">
-        <button type="button" className="btn btn-secondary" disabled={step === 1 || loading} onClick={goBack}>
-          {t.step.back}
+        <button type="button" className="btn btn-secondary btn-compact" disabled={step === 1 || loading} onClick={goBack}>
+          <IconChevronLeft />
+          <span>{t.step.back}</span>
         </button>
-        {step < 4 ? (
-          <button type="button" className="btn" disabled={!canContinue || loading} onClick={goNext}>
-            {t.step.continue}
+        {step < 6 ? (
+          <button type="button" className="btn btn-compact" disabled={!canContinue || loading} onClick={goNext}>
+            <span>{step === 4 || (step === 5 && !inject?.ok) ? t.step.inject : t.step.continue}</span>
+            <IconChevronRight />
           </button>
         ) : (
           <span className="badge badge-muted">{t.step.last}</span>

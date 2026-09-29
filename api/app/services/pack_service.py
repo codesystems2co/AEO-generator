@@ -30,6 +30,22 @@ PACK_SYSTEM = (
 )
 
 
+def heading_label(value: Any) -> str:
+    """Heading text. Model rows sometimes arrive as {level, text} objects."""
+    if isinstance(value, dict):
+        for key in ("text", "title", "heading", "name"):
+            raw = value.get(key)
+            if isinstance(raw, str) and raw.strip():
+                return raw.strip()
+        return ""
+    text = str(value or "").strip()
+    if text.startswith("{") and "text" in text:
+        match = re.search(r"""['"]text['"]\s*:\s*(['"])(.*?)\1""", text, re.DOTALL)
+        if match:
+            return match.group(2).strip()
+    return text
+
+
 def _tree_node(label: str, value: Optional[str] = None, children: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     node: Dict[str, Any] = {"label": label}
     if value:
@@ -74,7 +90,7 @@ def build_tree(topic: str, aeo: Dict[str, Any], seo: Dict[str, Any]) -> List[Dic
                 ),
                 _tree_node(
                     f"H2 ({len(h2s)})",
-                    children=[_tree_node(h) for h in h2s],
+                    children=[_tree_node(heading_label(h)) for h in h2s if heading_label(h)],
                 ),
             ],
         ),
@@ -217,7 +233,7 @@ def _merge_ollama(base: Dict[str, Any], llm: Dict[str, Any]) -> Dict[str, Any]:
         seo["keywords"] = [str(k).strip() for k in kws if str(k).strip()][:12]
     h2 = llm.get("h2") or []
     if isinstance(h2, list) and h2:
-        aeo["structured_sections"] = [str(h).strip() for h in h2 if str(h).strip()][:8]
+        aeo["structured_sections"] = [label for label in (heading_label(h) for h in h2) if label][:8]
     faqs = llm.get("faq") or []
     parsed_faq = []
     if isinstance(faqs, list):

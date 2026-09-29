@@ -42,6 +42,7 @@ async function request(path, options = {}) {
   const url = `${API_BASE}${path}`
   const res = await fetch(url, {
     ...options,
+    signal: options.signal || AbortSignal.timeout(20000),
     headers: {
       'Content-Type': 'application/json',
       ...(licenseKey ? { 'X-AEO-License': licenseKey } : {}),
@@ -125,7 +126,8 @@ export const api = {
   google: {
     status: () => request('/api/google/status'),
     readiness: (body) => request('/api/google/readiness', { method: 'POST', body: JSON.stringify(body) }),
-    oauthStart: () => request('/api/google/oauth/start', { method: 'POST', body: '{}' }),
+    oauthStart: (body) => request('/api/google/oauth/start', { method: 'POST', body: JSON.stringify(body || {}) }),
+    oauthRevoke: () => request('/api/google/oauth/revoke', { method: 'POST', body: '{}' }),
     sites: () => request('/api/google/sites'),
     saSession: (body) => request('/api/google/sa/session', { method: 'POST', body: JSON.stringify(body) }),
   },
@@ -144,6 +146,23 @@ export const api = {
     run: (body) => request('/api/wizard/run', { method: 'POST', body: JSON.stringify(body) }),
     autofix: (body) => request('/api/wizard/google/autofix', { method: 'POST', body: JSON.stringify(body) }),
     injectVerify: (body) => request('/api/wizard/inject-verify', { method: 'POST', body: JSON.stringify(body) }),
+    job: (body) => request('/api/wizard/job', { method: 'POST', body: JSON.stringify(body) }),
+    reportPdf: async (body) => {
+      const url = `${API_BASE}/api/wizard/report.pdf`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(licenseKey ? { 'X-AEO-License': licenseKey } : {}),
+        },
+        body: JSON.stringify(body || {}),
+      })
+      if (!res.ok) throw new Error(res.statusText || 'PDF')
+      const blob = await res.blob()
+      const header = res.headers.get('content-disposition') || ''
+      const match = header.match(/filename="?([^"]+)"?/i)
+      return { blob, filename: match?.[1] || 'informe.pdf' }
+    },
   },
   entitlement: {
     consume: (key, github_login, site) => request('/api/entitlement/consume', {
@@ -154,6 +173,29 @@ export const api = {
         site: site || undefined,
       }),
     }),
+  },
+  catalog: {
+    offer: (license) => request(`/api/catalog/offer${license ? `?license=${encodeURIComponent(license)}` : ''}`),
+    start: () => request('/api/catalog/session', { method: 'POST', body: JSON.stringify({ batch: true }) }),
+    tick: () => request('/api/catalog/tick', { method: 'POST', body: '{}' }),
+    job: (license) => request(`/api/catalog/job${license ? `?license=${encodeURIComponent(license)}` : ''}`),
+    publish: () => request('/api/catalog/publish', { method: 'POST', body: '{}' }),
+    reportPdf: async () => {
+      const url = `${API_BASE}/api/catalog/report.pdf`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(licenseKey ? { 'X-AEO-License': licenseKey } : {}),
+        },
+        body: '{}',
+      })
+      if (!res.ok) throw new Error(res.statusText || 'PDF')
+      const blob = await res.blob()
+      const header = res.headers.get('content-disposition') || ''
+      const match = header.match(/filename="?([^"]+)"?/i)
+      return { blob, filename: match?.[1] || 'informe-catalogo.pdf' }
+    },
   },
   connection: {
     status: () => request('/api/connection/status'),
