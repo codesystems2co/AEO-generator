@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import Wizard from './tabs/Wizard'
 import CatalogWizard from './tabs/CatalogWizard'
 import { copyFor, localeOf } from './i18n/copy'
+import { readOrderQuery } from './wizard/orderContext'
 import './App.css'
 
 function initialLang() {
@@ -48,7 +49,7 @@ export default function App() {
     document.documentElement.lang = lang
   }, [lang, t.brand])
 
-  const assistant = new URLSearchParams(window.location.search).get('assistant')
+  const assistant = readOrderQuery().assistant
 
   return (
     <Layout brand={t.brand} lang={lang} onLang={(next) => setLang(localeOf(next))}>

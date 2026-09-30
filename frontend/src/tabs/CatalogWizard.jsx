@@ -4,19 +4,17 @@ import JobProgress from '../components/JobProgress'
 import TreeList from '../components/TreeList'
 import { api, setLicense } from '../api'
 import { copyFor, localeOf } from '../i18n/copy'
+import { persistOrder, readOrderQuery } from '../wizard/orderContext'
 
 const CATALOG_PRODUCT_PAGE_URL =
   'https://arkiphere.cloud/shop/product-catalog-aeo-and-seo-pack-with-ia-110'
 
 function queryOf() {
-  try {
-    const q = new URLSearchParams(window.location.search)
-    return {
-      license: (q.get('license') || q.get('key') || '').trim(),
-      site: (q.get('site') || '').trim(),
-    }
-  } catch {
-    return { license: '', site: '' }
+  const row = readOrderQuery()
+  return {
+    license: row.license,
+    site: row.site,
+    gscHint: row.gscHint,
   }
 }
 

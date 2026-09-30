@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import secrets
 from typing import Any, Dict, List, Optional
@@ -139,17 +140,57 @@ def set_session_sa(raw_json: str) -> Dict[str, Any]:
     }
 
 
+def _encode_oauth_state(
+    *,
+    license_key: Optional[str] = None,
+    site: Optional[str] = None,
+    github_login: Optional[str] = None,
+    assistant: Optional[str] = None,
+) -> str:
+    nonce = secrets.token_urlsafe(16)
+    payload = {
+        "n": nonce,
+        "license": (license_key or "").strip(),
+        "site": (site or "").strip(),
+        "github_login": (github_login or "").strip(),
+        "assistant": (assistant or "").strip(),
+    }
+    blob = base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode().rstrip("=")
+    return f"{nonce}.{blob}"
+
+
+def _decode_oauth_state(state: Optional[str]) -> Dict[str, str]:
+    text = (state or "").strip()
+    if not text or "." not in text:
+        return {}
+    try:
+        _, blob = text.split(".", 1)
+        pad = "=" * (-len(blob) % 4)
+        data = json.loads(base64.urlsafe_b64decode(blob + pad).decode())
+        if not isinstance(data, dict):
+            return {}
+        return {str(k): str(v).strip() for k, v in data.items() if v is not None and str(v).strip()}
+    except Exception:
+        return {}
+
+
 def start_oauth(
     license_key: Optional[str] = None,
     site: Optional[str] = None,
     github_login: Optional[str] = None,
+    assistant: Optional[str] = None,
 ) -> Dict[str, Any]:
     if not settings.google_oauth_configured:
         return {
             "ok": False,
             "error": "OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET on the generator API.",
         }
-    state = secrets.token_urlsafe(24)
+    state = _encode_oauth_state(
+        license_key=license_key,
+        site=site,
+        github_login=github_login,
+        assistant=assistant,
+    )
     _oauth_ctx.clear()
     _oauth_ctx.update(
         {
@@ -157,6 +198,7 @@ def start_oauth(
             "license": (license_key or "").strip(),
             "site": (site or "").strip(),
             "github_login": (github_login or "").strip(),
+            "assistant": (assistant or "").strip(),
         }
     )
     params = {
@@ -177,25 +219,30 @@ def start_oauth(
     }
 
 
-def oauth_return_query(gsc_flag: str = "connected") -> str:
+def oauth_return_query(gsc_flag: str = "connected", oauth_state: Optional[str] = None) -> str:
+    decoded = _decode_oauth_state(oauth_state)
     params = {"gsc": gsc_flag}
-    license_key = (_oauth_ctx.get("license") or "").strip()
-    site = (_oauth_ctx.get("site") or "").strip()
-    github_login = (_oauth_ctx.get("github_login") or "").strip()
+    license_key = (decoded.get("license") or _oauth_ctx.get("license") or "").strip()
+    site = (decoded.get("site") or _oauth_ctx.get("site") or "").strip()
+    github_login = (decoded.get("github_login") or _oauth_ctx.get("github_login") or "").strip()
+    assistant = (decoded.get("assistant") or _oauth_ctx.get("assistant") or "").strip()
     if license_key:
         params["license"] = license_key
     if site:
         params["site"] = site
     if github_login:
         params["user"] = github_login
+    if assistant:
+        params["assistant"] = assistant
     return urlencode(params)
 
 
 async def finish_oauth(code: str, state: str) -> Dict[str, Any]:
     if not code:
         return {"ok": False, "error": "Missing code"}
-    expected = _oauth_ctx.get("state")
-    if expected and state and state != expected:
+    expected = (_oauth_ctx.get("state") or "").strip()
+    decoded = _decode_oauth_state(state)
+    if expected and state and state != expected and not decoded.get("license"):
         return {"ok": False, "error": "OAuth state mismatch"}
     if not settings.google_oauth_configured:
         return {"ok": False, "error": "OAuth is not configured"}

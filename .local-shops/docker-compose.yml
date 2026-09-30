@@ -1,0 +1,79 @@
+# Demo shops for manual Optimizator testing (Odoo runs separately in ../.local-odoo).
+# WooCommerce: http://127.0.0.1:8080  admin / changeme123
+# PrestaShop:  http://127.0.0.1:8081  demo@prestashop.com / prestashop_demo
+
+services:
+  woo-db:
+    image: mariadb:10.11
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wp
+      MYSQL_PASSWORD: wp
+    volumes:
+      - woo-db:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  woocommerce:
+    image: wordpress:6.7-php8.2-apache
+    depends_on:
+      woo-db:
+        condition: service_healthy
+    ports:
+      - '8080:80'
+    environment:
+      WORDPRESS_DB_HOST: woo-db
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - woo-html:/var/www/html
+
+  ps-db:
+    image: mariadb:10.11
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: prestashop
+      MYSQL_USER: ps
+      MYSQL_PASSWORD: ps
+    volumes:
+      - ps-db:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  prestashop:
+    image: prestashop/prestashop:8.1
+    depends_on:
+      ps-db:
+        condition: service_healthy
+    ports:
+      - '8081:80'
+    environment:
+      DB_SERVER: ps-db
+      DB_NAME: prestashop
+      DB_USER: ps
+      DB_PASSWD: ps
+      PS_INSTALL_AUTO: 1
+      PS_DOMAIN: localhost:8081
+      PS_FOLDER_ADMIN: admin-dev
+      PS_FOLDER_INSTALL: install-dev
+      PS_COUNTRY: ES
+      PS_LANGUAGE: es
+      ADMIN_MAIL: demo@prestashop.com
+      ADMIN_PASSWD: prestashop_demo
+      PS_ENABLE_SSL: 0
+    volumes:
+      - ps-html:/var/www/html
+
+volumes:
+  woo-db:
+  woo-html:
+  ps-db:
+  ps-html:

@@ -9,6 +9,11 @@ import {
   buildJobPayload,
   buildProgress,
 } from '../wizard/jobDossier'
+import {
+  persistOrder,
+  readOrderQuery,
+  writeOrderQuery,
+} from '../wizard/orderContext'
 import { copyFor, localeOf } from '../i18n/copy'
 import '../App.css'
 
@@ -68,70 +73,8 @@ const GAP_LABELS = {
   'Structured data': 'Datos estructurados',
 }
 
-const ORDER_STORAGE_KEY = 'aeo_order'
-
-function restoreOrder() {
-  try {
-    const raw = sessionStorage.getItem(ORDER_STORAGE_KEY)
-    const row = raw ? JSON.parse(raw) : {}
-    return {
-      license: String(row.license || '').trim(),
-      site: String(row.site || '').trim(),
-      githubLogin: String(row.githubLogin || '').trim(),
-    }
-  } catch {
-    return { license: '', site: '', githubLogin: '' }
-  }
-}
-
-function persistOrder({ license, site, githubLogin }) {
-  try {
-    const next = {
-      license: (license || '').trim(),
-      site: (site || '').trim(),
-      githubLogin: (githubLogin || '').trim(),
-    }
-    if (!next.license && !next.site) return
-    sessionStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(next))
-  } catch {
-    /* ignore */
-  }
-}
-
-function writeOrderQuery({ license, site, githubLogin, gscHint }) {
-  try {
-    const params = new URLSearchParams(window.location.search)
-    if (license) params.set('license', license)
-    if (site) params.set('site', site)
-    if (githubLogin) params.set('user', githubLogin)
-    if (gscHint) params.set('gsc', 'connected')
-    else params.delete('gsc')
-    const next = `${window.location.pathname}?${params}${window.location.hash || ''}`
-    window.history.replaceState({}, '', next)
-  } catch {
-    /* ignore */
-  }
-}
-
 function readQuery() {
-  if (typeof window === 'undefined') {
-    return { license: '', site: '', githubLogin: '', gscHint: false }
-  }
-  try {
-    const q = new URLSearchParams(window.location.search)
-    const saved = restoreOrder()
-    const license = (q.get('license') || q.get('key') || saved.license || '').trim()
-    const site = (q.get('site') || saved.site || '').trim()
-    const githubLogin = (q.get('user') || saved.githubLogin || '').trim()
-    const gscHint = q.get('gsc') === 'connected'
-    if (license || site) persistOrder({ license, site, githubLogin })
-    if (gscHint && license && !q.get('license')) {
-      writeOrderQuery({ license, site, githubLogin, gscHint: true })
-    }
-    return { license, site, githubLogin, gscHint }
-  } catch {
-    return { license: '', site: '', githubLogin: '', gscHint: false }
-  }
+  return readOrderQuery()
 }
 
 function keepHttps(value) {
@@ -375,7 +318,7 @@ function GoogleAccountCard({ connected, loading, revokeBusy, onConnect, onRevoke
 }
 
 export default function Wizard({ lang: langProp }) {
-  const query = readQuery()
+  const query = readOrderQuery()
   const [step, setStep] = useState(1)
   const [started, setStarted] = useState(false)
   const [status, setStatus] = useState(null)
@@ -459,8 +402,11 @@ export default function Wizard({ lang: langProp }) {
 
   useEffect(() => {
     api.wizard.status().then(setStatus).catch(() => {})
-    if (query.license) {
-      consumeKey(query.license)
+    const boot = readOrderQuery()
+    if (boot.license) {
+      setLicenseKey(boot.license)
+      setLicense(boot.license)
+      consumeKey(boot.license)
     } else {
       setEntitlement({
         allowed: false,
@@ -695,13 +641,15 @@ export default function Wizard({ lang: langProp }) {
     setError(null)
     setLoading(true)
     try {
+      const assistant = new URLSearchParams(window.location.search).get('assistant') || ''
       const data = await api.google.oauthStart({
         license: licenseKey,
         site: siteUrl,
         github_login: githubLogin || undefined,
+        assistant: assistant || undefined,
       })
       if (data?.auth_url) {
-        persistOrder({ license: licenseKey, site: siteUrl, githubLogin })
+        persistOrder({ license: licenseKey, site: siteUrl, githubLogin, assistant })
         window.location.href = data.auth_url
         return
       }
