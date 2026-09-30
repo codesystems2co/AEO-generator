@@ -357,19 +357,23 @@ a.btn-secondary {
 }
 
 .platform-card-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.55rem;
   min-width: 0;
 }
 
 .platform-card-head strong {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
+  display: block;
   font-size: 0.95rem;
   line-height: 1.2;
+  min-width: 0;
+}
+
+.platform-card-head .platform-live-tag {
+  display: inline-block;
+  margin-top: 0.2rem;
 }
 
 .platform-card-hint {
@@ -409,6 +413,63 @@ a.btn-secondary {
   display: block;
   margin: 0;
   flex-shrink: 0;
+}
+
+.connect-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem 1rem;
+  margin: 0.35rem 0 1rem;
+}
+
+.connect-form-grid .form-row {
+  margin: 0;
+}
+
+.connect-form-grid .form-row.span-full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 520px) {
+  .connect-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .connect-form-grid .form-row.span-full {
+    grid-column: auto;
+  }
+}
+
+.btn-platform {
+  width: auto;
+  max-width: none;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.4rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  gap: 0.5rem;
+  white-space: nowrap;
+  justify-content: flex-start;
+  font-weight: 600;
+}
+
+.btn-platform:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent-dim);
+}
+
+.btn-platform:disabled:hover {
+  background: var(--surface);
+}
+
+.btn-platform .platform-mark {
+  width: 28px;
+  height: 28px;
+}
+
+.btn-platform-revoke {
+  margin-top: 0.65rem;
 }
 
 .btn-icon {

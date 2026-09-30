@@ -247,19 +247,17 @@ function GoogleMark() {
   )
 }
 
-function IconPlug() {
+function PlatformActionButton({ platformId, children, disabled, onClick, type = 'button', className = '' }) {
   return (
-    <svg className="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M9 7V3h2v4h2V3h2v4h1a2 2 0 0 1 2 2v4.5a6.5 6.5 0 0 1-5 6.32V22h-2v-2.18A6.5 6.5 0 0 1 8 13.5V9a2 2 0 0 1 2-2H9Z" />
-    </svg>
-  )
-}
-
-function IconUnlink() {
-  return (
-    <svg className="btn-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M17 7h-1V5h1a5 5 0 0 1 0 10h-1v-2h1a3 3 0 0 0 0-6ZM8 9H7a3 3 0 0 0 0 6h1v2H7a5 5 0 1 1 0-10h1v2Zm8.7-3.3 1.4 1.4-11 11-1.4-1.4 11-11ZM11 11h2v2h-2v-2Z" />
-    </svg>
+    <button
+      type={type}
+      className={`btn btn-platform ${className}`.trim()}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <PlatformMark id={platformId} />
+      <span>{children}</span>
+    </button>
   )
 }
 
@@ -288,20 +286,22 @@ function WorkingForYou({ message }) {
   )
 }
 
-function GoogleAccountCard({ connected, loading, revokeBusy, onConnect, onRevoke, t }) {
+function GoogleAccountCard({ connected, canRevoke, loading, revokeBusy, onConnect, onRevoke, t }) {
   return (
     <div className="gsc-auth">
       {connected ? (
         <>
-          <button
-            type="button"
-            className="btn btn-google"
-            disabled={loading || revokeBusy}
-            onClick={onRevoke}
-          >
-            <GoogleMark />
-            <span>{revokeBusy ? t.connect.googleRevoking : t.connect.googleRevoke}</span>
-          </button>
+          {canRevoke ? (
+            <button
+              type="button"
+              className="btn btn-google"
+              disabled={loading || revokeBusy}
+              onClick={onRevoke}
+            >
+              <GoogleMark />
+              <span>{revokeBusy ? t.connect.googleRevoking : t.connect.googleRevoke}</span>
+            </button>
+          ) : null}
           <p className="gap-ok">✓ {t.connect.googleOn}</p>
         </>
       ) : (
@@ -436,10 +436,10 @@ export default function Wizard({ lang: langProp }) {
     }).catch(() => {}).finally(() => setStatusBusy(false))
   }, [entitlement, query.license])
 
-  const apiConnected = Boolean(
+  const apiGoogleConnected = Boolean(
     status?.google?.modes?.oauth?.connected || google?.auth?.modes?.oauth?.connected
   )
-  const googleConnected = googleHint || apiConnected
+  const googleConnected = apiGoogleConnected || googleHint
   const byPlatform = platformsMap(connection)
   const selectedConn = byPlatform[platform] || null
   const connectDone = Boolean(selectedConn?.connected)
@@ -1009,57 +1009,57 @@ export default function Wizard({ lang: langProp }) {
                       </div>
                     )
                   })()}
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-compact"
+                  <PlatformActionButton
+                    platformId={platform}
+                    className="btn-platform-revoke"
                     disabled={loading || revokeBusy}
                     onClick={revokeConnection}
                   >
-                    <IconUnlink />
-                    <span>{revokeBusy ? t.connect.revoking : t.connect.revoke}</span>
-                  </button>
+                    {revokeBusy ? t.connect.revoking : t.connect.revoke}
+                  </PlatformActionButton>
                 </div>
               ) : (
                 <>
                   <form onSubmit={saveConnection}>
-                    {platform === 'odoo' && (
-                      <>
-                        <div className="form-row">
-                          <label htmlFor="aeo-db">{t.connect.db}</label>
-                          <input id="aeo-db" value={database} onChange={(e) => setDatabase(e.target.value)} placeholder="osh" autoComplete="off" />
+                    <div className="connect-form-grid">
+                      {platform === 'odoo' && (
+                        <>
+                          <div className="form-row">
+                            <label htmlFor="aeo-user">{t.connect.user}</label>
+                            <input id="aeo-user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t.connect.user} autoComplete="off" />
+                          </div>
+                          <div className="form-row">
+                            <label htmlFor="aeo-key">{t.connect.password}</label>
+                            <input id="aeo-key" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" />
+                          </div>
+                          <div className="form-row span-full">
+                            <label htmlFor="aeo-db">{t.connect.db}</label>
+                            <input id="aeo-db" value={database} onChange={(e) => setDatabase(e.target.value)} placeholder="osh" autoComplete="off" />
+                          </div>
+                        </>
+                      )}
+                      {platform === 'prestashop' && (
+                        <div className="form-row span-full">
+                          <label htmlFor="aeo-ws">{t.connect.ws}</label>
+                          <input id="aeo-ws" type="password" value={wsKey} onChange={(e) => setWsKey(e.target.value)} autoComplete="off" />
                         </div>
-                        <div className="form-row">
-                          <label htmlFor="aeo-user">{t.connect.user}</label>
-                          <input id="aeo-user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t.connect.user} autoComplete="off" />
-                        </div>
-                        <div className="form-row">
-                          <label htmlFor="aeo-key">{t.connect.password}</label>
-                          <input id="aeo-key" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" />
-                        </div>
-                      </>
-                    )}
-                    {platform === 'prestashop' && (
-                      <div className="form-row">
-                        <label htmlFor="aeo-ws">{t.connect.ws}</label>
-                        <input id="aeo-ws" type="password" value={wsKey} onChange={(e) => setWsKey(e.target.value)} autoComplete="off" />
-                      </div>
-                    )}
-                    {platform === 'woocommerce' && (
-                      <>
-                        <div className="form-row">
-                          <label htmlFor="aeo-ck">{t.connect.ck}</label>
-                          <input id="aeo-ck" value={consumerKey} onChange={(e) => setConsumerKey(e.target.value)} autoComplete="off" />
-                        </div>
-                        <div className="form-row">
-                          <label htmlFor="aeo-cs">{t.connect.cs}</label>
-                          <input id="aeo-cs" type="password" value={consumerSecret} onChange={(e) => setConsumerSecret(e.target.value)} autoComplete="off" />
-                        </div>
-                      </>
-                    )}
-                    <button type="submit" className="btn btn-compact" disabled={loading}>
-                      <IconPlug />
-                      <span>{loading ? t.connect.checking : t.connect.submit.replace('{platform}', selected.label)}</span>
-                    </button>
+                      )}
+                      {platform === 'woocommerce' && (
+                        <>
+                          <div className="form-row">
+                            <label htmlFor="aeo-ck">{t.connect.ck}</label>
+                            <input id="aeo-ck" value={consumerKey} onChange={(e) => setConsumerKey(e.target.value)} autoComplete="off" />
+                          </div>
+                          <div className="form-row">
+                            <label htmlFor="aeo-cs">{t.connect.cs}</label>
+                            <input id="aeo-cs" type="password" value={consumerSecret} onChange={(e) => setConsumerSecret(e.target.value)} autoComplete="off" />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <PlatformActionButton platformId={platform} type="submit" disabled={loading}>
+                      {loading ? t.connect.checking : t.connect.connectAction}
+                    </PlatformActionButton>
                   </form>
                   <p className="connect-skip-hint">{t.connect.skipHint}</p>
                 </>
@@ -1068,6 +1068,7 @@ export default function Wizard({ lang: langProp }) {
           )}
           <GoogleAccountCard
             connected={googleConnected}
+            canRevoke={apiGoogleConnected}
             loading={loading}
             revokeBusy={googleRevokeBusy}
             onConnect={startSearchConsole}
@@ -1091,6 +1092,7 @@ export default function Wizard({ lang: langProp }) {
           ) : null}
           <GoogleAccountCard
             connected={googleConnected}
+            canRevoke={apiGoogleConnected}
             loading={loading}
             revokeBusy={googleRevokeBusy}
             onConnect={startSearchConsole}
