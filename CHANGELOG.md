@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Mac gateway testing secret layout: `.env.gateway-testing.example`, gitignored `.secrets/mac-gateway-testing.env`, `scripts/check-secrets-not-committed.sh`, rule `gateway-testing-secrets.mdc` (no real keys in git).
 - `CHANGELOG.md` for release notes on branch `optimizator/light-dark-odoo-compat-01`.
 - OAuth return tests: `api/tests/test_oauth_return_state.py`.
 - Platform test evidence: `_bmad-output/2026-09-30_issue27_platform_test/`.

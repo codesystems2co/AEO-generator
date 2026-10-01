@@ -11,6 +11,10 @@ __pycache__/
 .env.local
 .env.*.local
 *.env
+.secrets/
+!.env.gateway-testing.example
+mac-gateway-testing.json
+**/mac-gateway-testing.json
 
 # Build outputs
 dist/
