@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import json
+import urllib.error
+import urllib.parse
+import urllib.request
 from typing import Any, Dict, Optional
 from xmlrpc import client as xmlrpc_client
 
@@ -19,6 +22,21 @@ REVOKE_PATHS = (
     "/aeo/connection/revoke/http",
     "/aeo/license/connection/revoke/http",
     "/aeo/order/connection/revoke/http",
+)
+READ_PATHS = (
+    "/aeo/license/connection/http",
+    "/aeo/connection/http",
+    "/aeo/order/connection/http",
+)
+
+READ_LINE_PUBLIC_FIELDS = (
+    "aeo_connect_platform",
+    "aeo_connect_shop_url",
+    "aeo_connect_database",
+    "aeo_connect_login",
+    "aeo_connect_rpc_url",
+    "aeo_connect_state",
+    "aeo_connect_has_secret",
 )
 
 LINE_FIELDS = (
@@ -99,6 +117,188 @@ async def _post_first(paths, payload: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _pick_optimizator_line(lines: list) -> Optional[Dict[str, Any]]:
+    chosen = None
+    for line in lines or []:
+        blob = " ".join(
+            str(x or "")
+            for x in (
+                line.get("name"),
+                (line.get("product_id") or [None, ""])[1] if isinstance(line.get("product_id"), (list, tuple)) else "",
+            )
+        ).lower()
+        if "optimizator" in blob or "aeo" in blob:
+            chosen = line
+            break
+    if not chosen and lines:
+        chosen = lines[0]
+    return chosen
+
+
+def _find_optimizator_line_id(order_name: str) -> Optional[Dict[str, Any]]:
+    orders = _odoo_execute(
+        "sale.order",
+        "search_read",
+        [("name", "=", order_name)],
+        fields=["id", "name"],
+        limit=1,
+    ) or []
+    if not orders:
+        return None
+    oid = orders[0]["id"]
+    lines = _odoo_execute(
+        "sale.order.line",
+        "search_read",
+        [("order_id", "=", oid)],
+        fields=["id", "name", "product_id"],
+        limit=40,
+    ) or []
+    chosen = _pick_optimizator_line(lines)
+    if not chosen:
+        return None
+    return {"sale_order_name": order_name, "sale_line_id": chosen["id"]}
+
+
+def read_order_line_public(sale_order_name: str) -> Dict[str, Any]:
+    """Read non-secret connection fields from the Optimizator sale.order.line (XML-RPC)."""
+    order_name = (sale_order_name or "").strip()
+    if not order_name:
+        return {"ok": False, "message": "Falta el pedido."}
+    if not _odoo_password() or not (settings.ODOO_USERNAME or "").strip():
+        return {"ok": False, "mode": "xmlrpc", "message": "Odoo XML-RPC no configurado en el generador."}
+    try:
+        ref = _find_optimizator_line_id(order_name)
+        if not ref:
+            return {"ok": False, "mode": "xmlrpc", "message": f"Pedido {order_name} sin línea Optimizator."}
+        fields = _odoo_execute("sale.order.line", "fields_get", attributes=["type"]) or {}
+        read_fields = [f for f in READ_LINE_PUBLIC_FIELDS if f in fields]
+        if not read_fields:
+            return {
+                "ok": False,
+                "mode": "xmlrpc",
+                "sale_line_id": ref["sale_line_id"],
+                "message": "La línea no expone campos aeo_connect_*.",
+            }
+        rows = _odoo_execute(
+            "sale.order.line",
+            "read",
+            [ref["sale_line_id"]],
+            fields=read_fields,
+        ) or []
+        row = rows[0] if rows else {}
+        shop = (row.get("aeo_connect_shop_url") or row.get("aeo_conn_url") or "").strip()
+        if shop is False:
+            shop = ""
+        return {
+            "ok": True,
+            "mode": "xmlrpc",
+            "sale_order_name": order_name,
+            "sale_line_id": ref["sale_line_id"],
+            "aeo_connect_platform": row.get("aeo_connect_platform") or row.get("aeo_conn_platform"),
+            "aeo_connect_shop_url": shop or None,
+            "aeo_connect_database": row.get("aeo_connect_database") or row.get("aeo_conn_db"),
+            "aeo_connect_login": row.get("aeo_connect_login") or row.get("aeo_conn_user"),
+            "aeo_connect_rpc_url": row.get("aeo_connect_rpc_url"),
+            "aeo_connect_state": row.get("aeo_connect_state"),
+            "aeo_connect_has_secret": bool(row.get("aeo_connect_has_secret")),
+        }
+    except xmlrpc_client.Fault as exc:
+        return {"ok": False, "mode": "xmlrpc", "message": str(exc)[:240]}
+    except Exception as exc:
+        return {"ok": False, "mode": "xmlrpc", "message": str(exc)[:240]}
+
+
+def merge_public_line_fields(target: Dict[str, Any], line: Dict[str, Any]) -> Dict[str, Any]:
+    if not line.get("ok"):
+        return target
+    out = dict(target)
+    for key in (
+        "sale_line_id",
+        "aeo_connect_platform",
+        "aeo_connect_shop_url",
+        "aeo_connect_database",
+        "aeo_connect_login",
+        "aeo_connect_rpc_url",
+        "aeo_connect_state",
+        "aeo_connect_has_secret",
+    ):
+        if line.get(key) is not None:
+            out[key] = line.get(key)
+    return out
+
+
+def _line_from_http_payload(data: Dict[str, Any], order_name: str, path: str) -> Dict[str, Any]:
+    shop = (data.get("shop_url") or data.get("url") or "").strip()
+    return {
+        "ok": True,
+        "mode": "http",
+        "path": path,
+        "sale_order_name": data.get("sale_order_name") or order_name,
+        "sale_line_id": data.get("order_line_id") or data.get("sale_line_id"),
+        "aeo_connect_platform": data.get("platform"),
+        "aeo_connect_shop_url": shop or None,
+        "aeo_connect_database": data.get("database"),
+        "aeo_connect_login": data.get("login"),
+        "aeo_connect_rpc_url": data.get("rpc_url") if data.get("rpc_url") not in (False, None, "") else None,
+        "aeo_connect_state": data.get("state"),
+        "aeo_connect_has_secret": bool(data.get("secret_stored")),
+    }
+
+
+def fetch_order_line_public_sync(key: Optional[str], sale_order_name: Optional[str] = None) -> Dict[str, Any]:
+    """Prefer Arkiphere HTTP read; fall back to XML-RPC on the sale order line."""
+    license_key = (key or "").strip()
+    order_name = (sale_order_name or "").strip()
+    base = _base()
+    if license_key:
+        for path in READ_PATHS:
+            query = urllib.parse.urlencode({"key": license_key})
+            url = f"{base}{path}?{query}"
+            try:
+                req = urllib.request.Request(url, headers={"Accept": "application/json"}, method="GET")
+                with urllib.request.urlopen(req, timeout=20) as resp:
+                    data = json.loads(resp.read().decode("utf-8") or "{}")
+                if not isinstance(data, dict) or data.get("ok") is not True:
+                    continue
+                return _line_from_http_payload(data, order_name, path)
+            except urllib.error.HTTPError as exc:
+                if exc.code == 404:
+                    continue
+            except Exception:
+                continue
+    if order_name:
+        return read_order_line_public(order_name)
+    return {"ok": False, "message": "No hay clave ni pedido para leer la línea."}
+
+
+async def fetch_order_line_public(key: Optional[str], sale_order_name: Optional[str] = None) -> Dict[str, Any]:
+    license_key = (key or "").strip()
+    order_name = (sale_order_name or "").strip()
+    base = _base()
+    timeout = httpx.Timeout(20.0, connect=6.0)
+    if license_key:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+            for path in READ_PATHS:
+                url = f"{base}{path}"
+                try:
+                    r = await client.get(
+                        url,
+                        params={"key": license_key},
+                        headers={"Accept": "application/json"},
+                    )
+                    if r.status_code == 404 or r.status_code >= 400:
+                        continue
+                    data = r.json()
+                    if not isinstance(data, dict) or data.get("ok") is not True:
+                        continue
+                    return _line_from_http_payload(data, order_name, path)
+                except Exception:
+                    continue
+    if order_name:
+        return read_order_line_public(order_name)
+    return {"ok": False, "message": "No hay clave ni pedido para leer la línea."}
+
+
 def _line_write_vals(body: Dict[str, Any], clear: bool = False) -> Dict[str, Any]:
     if clear:
         return {
@@ -164,29 +364,10 @@ def _xmlrpc_write_line(body: Dict[str, Any], clear: bool = False) -> Dict[str, A
         if not orders:
             return {"ok": False, "mode": "xmlrpc", "message": f"Pedido {order_name} no encontrado."}
         oid = orders[0]["id"]
-        lines = _odoo_execute(
-            "sale.order.line",
-            "search_read",
-            [("order_id", "=", oid)],
-            fields=["id", "name", "product_id"],
-            limit=40,
-        ) or []
-        chosen = None
-        for line in lines:
-            blob = " ".join(
-                str(x or "")
-                for x in (
-                    line.get("name"),
-                    (line.get("product_id") or [None, ""])[1] if isinstance(line.get("product_id"), (list, tuple)) else "",
-                )
-            ).lower()
-            if "optimizator" in blob or "aeo" in blob:
-                chosen = line
-                break
-        if not chosen and lines:
-            chosen = lines[0]
-        if not chosen:
+        ref = _find_optimizator_line_id(order_name)
+        if not ref:
             return {"ok": False, "mode": "xmlrpc", "message": "No hay línea de pedido Optimizator."}
+        chosen = {"id": ref["sale_line_id"]}
         vals = _line_write_vals(body, clear=clear)
         fields = _odoo_execute("sale.order.line", "fields_get", attributes=["type"]) or {}
         usable = {k: v for k, v in vals.items() if k in fields}

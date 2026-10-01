@@ -67,3 +67,14 @@ async def entitlement_consume_get(
 @router.post("/consume")
 async def entitlement_consume_post(body: EntitlementConsume):
     return entitlement.consume(body.key, body.github_login, site=body.site)
+
+
+@router.get("/order-line")
+async def entitlement_order_line(
+    key: Optional[str] = None,
+    sale_order_name: Optional[str] = None,
+):
+    """Public shop-instance fields from the Optimizator sale.order.line (Arkiphere HTTP read)."""
+    from app.services.arkiphere_connection import fetch_order_line_public_sync
+
+    return fetch_order_line_public_sync(key, sale_order_name)

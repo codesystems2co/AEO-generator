@@ -40,7 +40,7 @@ async def snapshot(site_url: str) -> Dict[str, Any]:
     if not url:
         return out
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(18.0, connect=6.0), follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(6.0, connect=3.0), follow_redirects=True) as client:
             r = await client.get(url, headers={"User-Agent": "Arkiphere-Optimizator/1.0"})
             html = r.text or ""
             out["status_code"] = r.status_code
@@ -100,6 +100,54 @@ async def snapshot(site_url: str) -> Dict[str, Any]:
                     types.append(str(item.get("@type")))
     out["schema_types"] = types[:8]
     return out
+
+
+def customer_reading(snapshot_data: Dict[str, Any], locale: str = "es") -> str:
+    """Plain sentence for the wizard. Empty crawl fields are not printed as labels."""
+    host = (snapshot_data.get("host") or snapshot_data.get("url") or "the shop").strip()
+    title = (snapshot_data.get("title") or "").strip()
+    h1 = (snapshot_data.get("h1") or "").strip()
+    meta = (snapshot_data.get("meta_description") or "").strip()
+    types = [str(item).strip() for item in (snapshot_data.get("schema_types") or []) if str(item).strip()]
+    links = [str(item).strip() for item in (snapshot_data.get("internal_links") or []) if str(item).strip()]
+    spanish = (locale or "es").lower().startswith("es")
+    if not title and not h1 and not meta:
+        if spanish:
+            text = f"La tienda {host} responde, pero la página todavía no tiene título, encabezado ni descripción."
+        else:
+            text = f"The shop {host} is online, but the page still has no title, heading, or description."
+    else:
+        bits = []
+        if spanish:
+            if title:
+                bits.append(f"El título es «{title}».")
+            if h1:
+                bits.append(f"El encabezado es «{h1}».")
+            if meta:
+                bits.append(meta if meta.endswith(".") else f"{meta}.")
+        else:
+            if title:
+                bits.append(f"The title is “{title}”.")
+            if h1:
+                bits.append(f"The heading is “{h1}”.")
+            if meta:
+                bits.append(meta if meta.endswith(".") else f"{meta}.")
+        text = " ".join(bits)
+    if spanish:
+        if types:
+            text += " Hay datos estructurados: " + ", ".join(types) + "."
+        else:
+            text += " No hay datos estructurados."
+        if links:
+            text += f" Se leyeron {len(links)} enlaces internos."
+    else:
+        if types:
+            text += " Structured data: " + ", ".join(types) + "."
+        else:
+            text += " There is no structured data."
+        if links:
+            text += f" {len(links)} internal links were read."
+    return text.strip()
 
 
 def prompt_facts(snapshot_data: Dict[str, Any], extra: str = "") -> str:

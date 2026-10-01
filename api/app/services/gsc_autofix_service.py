@@ -8,7 +8,7 @@ import httpx
 
 from app.config import settings
 from app.services.chat_service import check_ollama_health
-from app.services.google_search_service import _fetch_text, oauth_connected, readiness
+from app.services.google_search_service import _fetch_text, company_profile_ready, oauth_connected, readiness
 
 AUTO_FIXABLE = {
     "Title tag",
@@ -22,6 +22,8 @@ AUTO_FIXABLE = {
 
 HARD_BLOCKERS = {
     "Live URL fetch",
+    "GSC property visible",
+    "Company profile",
 }
 
 FIX_SYSTEM = (
@@ -73,14 +75,25 @@ async def _commerce_scan(site_url: str) -> List[Dict[str, Any]]:
         }
     )
     schema_ok = "ld+json" in body or "schema.org" in body
-    extras.append(
-        {
-            "name": "Structured data",
-            "passed": schema_ok,
-            "fixable": True,
-            "message": "JSON-LD or schema.org found" if schema_ok else "No JSON-LD / schema.org markup",
-        }
-    )
+    stock = not company_profile_ready("", "", body[:8000])
+    if schema_ok and stock:
+        extras.append(
+            {
+                "name": "Structured data",
+                "passed": False,
+                "fixable": False,
+                "message": "PLACEHOLDER_SCHEMA",
+            }
+        )
+    else:
+        extras.append(
+            {
+                "name": "Structured data",
+                "passed": schema_ok,
+                "fixable": True,
+                "message": "JSON-LD or schema.org found" if schema_ok else "No JSON-LD / schema.org markup",
+            }
+        )
     return extras
 
 
@@ -92,8 +105,10 @@ def _classify(checks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "name": name,
             "passed": bool(c.get("passed")),
             "message": c.get("message") or "",
-            "fixable": name in AUTO_FIXABLE,
-            "hard": name in HARD_BLOCKERS,
+            "fixable": name in AUTO_FIXABLE and not str(c.get("message") or "").startswith("PLACEHOLDER_"),
+            "hard": name in HARD_BLOCKERS or str(c.get("message") or "").startswith("PLACEHOLDER_"),
+            "action_url": c.get("action_url"),
+            "detail": c.get("detail"),
         }
         if name in AUTO_FIXABLE:
             item["fixable"] = True
@@ -121,7 +136,10 @@ def _apply_virtual(gaps: List[Dict[str, Any]], fix: Dict[str, Any]) -> List[Dict
     out = []
     for g in gaps:
         name = g["name"]
-        virtual = bool(g.get("passed")) or mapping.get(name, False) or name in solved_names
+        placeholder = str(g.get("message") or "").startswith("PLACEHOLDER_")
+        virtual = (not placeholder) and (
+            bool(g.get("passed")) or (name in AUTO_FIXABLE and (mapping.get(name, False) or name in solved_names))
+        )
         out.append(
             {
                 **g,
@@ -228,23 +246,19 @@ async def autofix(
     loops: List[Dict[str, Any]] = []
     fix: Dict[str, Any] = {}
     overlay = classified
-    ollama_health = await check_ollama_health()
+    ollama_health = {"status": "skipped"}
     facts = " | ".join(x for x in (topic, context, report.get("page", {}).get("title")) if x)
 
-    for attempt in range(1, MAX_LOOPS + 1):
-        remaining_fixable = [g for g in overlay if g.get("fixable") and not g.get("virtual_passed", g.get("passed"))]
-        if not remaining_fixable:
-            break
-        llm = await _ollama_fix(report["site_url"], facts, remaining_fixable)
-        used = llm if llm else _heuristic_fix(report["site_url"], topic or report["site_url"], facts, remaining_fixable)
-        if llm:
-            used["backend"] = "ollama"
-        fix = {**fix, **used}
+    remaining_fixable = [g for g in overlay if g.get("fixable") and not g.get("virtual_passed", g.get("passed"))]
+    if remaining_fixable:
+        used = _heuristic_fix(report["site_url"], topic or report["site_url"], facts, remaining_fixable)
+        used["backend"] = "heuristic"
+        fix = used
         overlay = _apply_virtual(overlay, fix)
         loops.append(
             {
-                "attempt": attempt,
-                "backend": used.get("backend"),
+                "attempt": 1,
+                "backend": "heuristic",
                 "remaining_after": [g["name"] for g in overlay if g.get("fixable") and not g.get("virtual_passed")],
             }
         )
@@ -252,7 +266,7 @@ async def autofix(
     remaining_fixable = [g for g in overlay if g.get("fixable") and not g.get("virtual_passed")]
     hard = [g for g in overlay if g.get("hard") and not g.get("passed")]
     page_ok = not any(g["name"] == "Live URL fetch" and not g.get("passed") for g in overlay)
-    step_complete = page_ok and len(remaining_fixable) == 0
+    step_complete = page_ok and len(remaining_fixable) == 0 and not hard
 
     return {
         "ok": True,

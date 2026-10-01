@@ -5,7 +5,14 @@ from pydantic import BaseModel, Field
 
 from app.services import arkiphere_connection, connection_store, schema_context
 from app.services.odoo_inject import discover_database, probe_login
-from app.services.site_guard import bind_license_site, extract_license, keep_https
+from app.services.site_guard import (
+    bind_license_site,
+    extract_license,
+    keep_https,
+    normalize_host,
+    normalize_shop_url,
+    resolve_register_shop_url,
+)
 
 router = APIRouter()
 
@@ -34,6 +41,7 @@ class ConnectionBody(BaseModel):
     ws_key: Optional[str] = None
     consumer_key: Optional[str] = None
     consumer_secret: Optional[str] = None
+    shop_url: Optional[str] = None
     target: Optional[str] = None
     github_login: Optional[str] = None
 
@@ -59,11 +67,17 @@ async def connection_status(
     lic = extract_license(x_aeo_license, license, key)
     bound = bind_license_site(lic, None)
     pack = connection_store.public_platforms(lic)
+    line = await arkiphere_connection.fetch_order_line_public(lic, bound.get("sale_order_name"))
+    order_line_shop = (
+        normalize_shop_url(line.get("aeo_connect_shop_url")) if line.get("ok") else ""
+    )
     return {
         "ok": True,
         "connected": bool(pack.get("connected")),
         "site_url": bound["bound_site_url"],
         "sale_order_name": bound.get("sale_order_name"),
+        "order_line_shop_url": order_line_shop or None,
+        "order_line": line if line.get("ok") else None,
         "connection": pack.get("connection"),
         "platforms": pack.get("platforms") or {},
         "platforms_list": list(connection_store.PLATFORMS),
@@ -81,26 +95,29 @@ async def connection_register(
     platform = body.platform.strip().lower()
     if platform not in connection_store.PLATFORMS:
         raise HTTPException(status_code=400, detail=f"Plataforma no soportada. Usa: {', '.join(connection_store.PLATFORMS)}")
-    site = bound["bound_site_url"]
+    order_site = bound["bound_site_url"]
+    line = await arkiphere_connection.fetch_order_line_public(lic, bound.get("sale_order_name"))
+    order_line_shop = line.get("aeo_connect_shop_url") if line.get("ok") else None
+    shop_url = resolve_register_shop_url(order_line_shop, body.shop_url, body.url)
     if platform == "odoo" and not (body.api_key and body.username):
-        raise HTTPException(status_code=400, detail="Para Odoo hace falta usuario y clave API.")
+        raise HTTPException(status_code=400, detail="Para Odoo hace falta usuario y contraseña o clave API.")
     database = (body.database or "").strip()
     if platform == "odoo":
         if not database:
-            database = discover_database(site)
-        probe = probe_login(site, database, body.username or "", body.api_key or "")
+            database = discover_database(shop_url)
+        probe = probe_login(shop_url, database, body.username or "", body.api_key or "")
         if not probe.get("ok"):
             raise HTTPException(status_code=400, detail=probe.get("message") or "No se pudo conectar con Odoo.")
     if platform == "prestashop" and not body.ws_key:
         raise HTTPException(status_code=400, detail="Para PrestaShop hace falta la clave del webservice.")
     if platform == "woocommerce" and not (body.consumer_key and body.consumer_secret):
         raise HTTPException(status_code=400, detail="Para WooCommerce hacen falta clave y secreto de consumidor.")
-    snap = await schema_context.snapshot(site)
+    snap = await schema_context.snapshot(order_site)
     ark = await arkiphere_connection.save_to_order_line(
         {
             "key": lic,
             "platform": platform,
-            "url": site,
+            "url": shop_url,
             "database": database or body.database,
             "username": body.username,
             "api_key": body.api_key,
@@ -114,8 +131,9 @@ async def connection_register(
         lic,
         {
             "platform": platform,
-            "url": site,
-            "host": bound.get("bound_host"),
+            "url": shop_url,
+            "order_site_url": order_site,
+            "host": normalize_host(shop_url) or bound.get("bound_host"),
             "database": database or body.database,
             "username": body.username,
             "api_key": body.api_key,
@@ -146,7 +164,8 @@ async def connection_register(
     return {
         "ok": True,
         "connected": True,
-        "site_url": site,
+        "site_url": order_site,
+        "shop_url": shop_url,
         "sale_order_name": bound.get("sale_order_name"),
         "connection": stored,
         "platforms": pack.get("platforms") or {},

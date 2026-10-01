@@ -10,10 +10,12 @@ import {
   buildProgress,
 } from '../wizard/jobDossier'
 import {
+  normalizeCommerceSite,
   persistOrder,
   readOrderQuery,
   writeOrderQuery,
 } from '../wizard/orderContext'
+import { odooDatabaseDefault, orderLineShopUrl } from '../wizard/shopConnectHelpers'
 import { copyFor, localeOf } from '../i18n/copy'
 import '../App.css'
 
@@ -39,9 +41,9 @@ function stepTitles(t) {
   }
 }
 
-function platformsFor(t) {
+function platformsFor(t, odooHint) {
   return [
-    { id: 'odoo', label: 'Odoo', hint: t.connect.odooHint },
+    { id: 'odoo', label: 'Odoo', hint: odooHint || t.connect.odooHint },
     { id: 'prestashop', label: 'PrestaShop', hint: t.connect.prestaHint },
     { id: 'woocommerce', label: 'WooCommerce', hint: t.connect.wooHint },
   ]
@@ -81,7 +83,7 @@ function keepHttps(value) {
   const v = (value || '').trim()
   if (!v) return ''
   if (/^https:\/\//i.test(v)) return v
-  if (/^http:\/\//i.test(v)) return `https://${v.slice(7)}`
+  if (/^http:\/\//i.test(v)) return v
   return `https://${v.replace(/^\/+/, '')}`
 }
 
@@ -106,6 +108,29 @@ function friendlyGapMessage(name, message, connected, t) {
   }
   if (name === 'OAuth client configured') {
     return t.gaps.done
+  }
+  if (name === 'Company profile' && message === 'COMPANY_PLACEHOLDER') {
+    return t.gaps.companyMissing
+  }
+  if (name === 'Company profile' && message === 'COMPANY_OK') {
+    return t.gaps.companyOk
+  }
+  if (name === 'GSC property visible' && String(message || '').startsWith('GSC_PROPERTY_MISSING')) {
+    const parts = String(message).split('|')
+    const host = parts[1] || ''
+    const hosts = (parts.slice(2).join('|') || '').split('||').filter(Boolean)
+    const list = hosts.length ? hosts.join(', ') : t.gaps.propertyNone
+    return t.gaps.propertyMissing.replace('{host}', host).replace('{hosts}', list)
+  }
+  if (name === 'GSC property visible' && String(message || '').startsWith('GSC_PROPERTY_UNREAD')) {
+    const host = String(message).split('|')[1] || ''
+    return t.gaps.propertyUnread.replace('{host}', host).replace('{hosts}', t.gaps.propertyNone)
+  }
+  if (name === 'GSC property visible' && /Property matches/i.test(message || '')) {
+    return t.gaps.propertyOk
+  }
+  if (message === 'PLACEHOLDER_TITLE' || message === 'PLACEHOLDER_META' || message === 'PLACEHOLDER_SCHEMA') {
+    return t.gaps.placeholderContent
   }
   if (!message) return ''
   const map = [
@@ -175,6 +200,20 @@ function connectionStatusLines(connection, platformLabel, t, forPlatform) {
   }
 }
 
+const GAP_ORDER = [
+  'Client consent',
+  'GSC property visible',
+  'Live URL fetch',
+  'Title tag',
+  'Meta description',
+  'H1 present',
+  'Company profile',
+  'robots.txt',
+  'sitemap.xml',
+  'Commerce signals',
+  'Structured data',
+]
+
 function displayGaps(gaps, connected, t) {
   const hidden = new Set([
     'OAuth client configured',
@@ -184,6 +223,12 @@ function displayGaps(gaps, connected, t) {
   ])
   return (gaps || [])
     .filter((g) => !hidden.has(g.name))
+    .slice()
+    .sort((a, b) => {
+      const ai = GAP_ORDER.indexOf(a.name)
+      const bi = GAP_ORDER.indexOf(b.name)
+      return (ai === -1 ? GAP_ORDER.length : ai) - (bi === -1 ? GAP_ORDER.length : bi)
+    })
     .map((g) => {
     const consent = g.name === 'Client consent'
     const passed = consent && connected ? true : Boolean(g.virtual_passed || g.passed)
@@ -199,6 +244,7 @@ function displayGaps(gaps, connected, t) {
         'sitemap.xml': t.gaps.sitemap,
         'Client consent': t.gaps.consent,
         'GSC property visible': t.gaps.property,
+        'Company profile': t.gaps.company,
         'Commerce signals': t.gaps.commerce,
         'Structured data': t.gaps.schema,
       }[g.name]) || GAP_LABELS[g.name] || g.name,
@@ -291,18 +337,19 @@ function GoogleAccountCard({ connected, canRevoke, loading, revokeBusy, onConnec
     <div className="gsc-auth">
       {connected ? (
         <>
-          {canRevoke ? (
-            <button
-              type="button"
-              className="btn btn-google"
-              disabled={loading || revokeBusy}
-              onClick={onRevoke}
-            >
-              <GoogleMark />
-              <span>{revokeBusy ? t.connect.googleRevoking : t.connect.googleRevoke}</span>
-            </button>
-          ) : null}
-          <p className="gap-ok">✓ {t.connect.googleOn}</p>
+          <button
+            type="button"
+            className="btn btn-google"
+            disabled={loading || revokeBusy}
+            onClick={onRevoke}
+          >
+            <GoogleMark />
+            <span>{revokeBusy ? t.connect.googleRevoking : t.connect.googleRevoke}</span>
+          </button>
+          <p className="gsc-connected-msg" role="status">
+            <span aria-hidden="true">✓</span>
+            {t.connect.googleOn}
+          </p>
         </>
       ) : (
         <>
@@ -337,7 +384,9 @@ export default function Wizard({ lang: langProp }) {
   const [platform, setPlatform] = useState('odoo')
   const [database, setDatabase] = useState('')
   const [username, setUsername] = useState('')
-  const [apiKey, setApiKey] = useState('')
+  const [odooAuthMode, setOdooAuthMode] = useState('user')
+  const [odooPassword, setOdooPassword] = useState('')
+  const [odooApiKey, setOdooApiKey] = useState('')
   const [wsKey, setWsKey] = useState('')
   const [consumerKey, setConsumerKey] = useState('')
   const [consumerSecret, setConsumerSecret] = useState('')
@@ -353,7 +402,7 @@ export default function Wizard({ lang: langProp }) {
   const [openStep, setOpenStep] = useState(true)
   const [revokeBusy, setRevokeBusy] = useState(false)
   const [googleRevokeBusy, setGoogleRevokeBusy] = useState(false)
-  const [statusBusy, setStatusBusy] = useState(Boolean(query.license))
+  const [statusBusy, setStatusBusy] = useState(false)
   const googleAutoRef = useRef(false)
   const packAutoRef = useRef(false)
   const [googleHint, setGoogleHint] = useState(query.gscHint)
@@ -362,14 +411,47 @@ export default function Wizard({ lang: langProp }) {
   const t = copyFor(lang)
   const STEPS = stepsFor(t)
   const STEP_TITLES = stepTitles(t)
-  const PLATFORMS = platformsFor(t)
+  const odooPlatformHint = odooAuthMode === 'apikey' ? t.connect.odooHintApi : t.connect.odooHint
+  const PLATFORMS = platformsFor(t, odooPlatformHint)
 
-  async function consumeKey(key) {
+  function applyOrderLineFields(data, line) {
+    if (!line?.ok) return data
+    return {
+      ...data,
+      sale_line_id: line.sale_line_id ?? data?.sale_line_id,
+      aeo_connect_platform: line.aeo_connect_platform ?? data?.aeo_connect_platform,
+      aeo_connect_shop_url: line.aeo_connect_shop_url ?? data?.aeo_connect_shop_url,
+      aeo_connect_database: line.aeo_connect_database ?? data?.aeo_connect_database,
+      aeo_connect_login: line.aeo_connect_login ?? data?.aeo_connect_login,
+      aeo_connect_state: line.aeo_connect_state ?? data?.aeo_connect_state,
+    }
+  }
+
+  function syncShopFromEntitlement(data) {
+    const lineShop = (data?.aeo_connect_shop_url || '').trim()
+    if (!lineShop) return
+    if (data?.aeo_connect_database) setDatabase(String(data.aeo_connect_database))
+    if (data?.aeo_connect_platform) setPlatform(String(data.aeo_connect_platform))
+    if (data?.aeo_connect_login) setUsername(String(data.aeo_connect_login))
+  }
+
+  async function fetchAndMergeOrderLine(key, base) {
+    try {
+      const line = await api.entitlement.orderLine(key, base?.sale_order_name)
+      return applyOrderLineFields(base, line)
+    } catch {
+      return base
+    }
+  }
+
+  async function consumeKey(key, siteHint) {
     setChecking(true)
     setError(null)
     try {
       setLicense(key)
-      const data = await api.entitlement.consume(key, githubLogin || undefined)
+      const siteForConsume = (siteHint || readOrderQuery().site || query.site || '').trim() || undefined
+      let data = await api.entitlement.consume(key, githubLogin || undefined, siteForConsume)
+      data = await fetchAndMergeOrderLine(key, data)
       setEntitlement(data)
       if (data?.allowed && data?.aeo_site_url) {
         const url = keepHttps(data.aeo_site_url)
@@ -383,6 +465,30 @@ export default function Wizard({ lang: langProp }) {
           githubLogin,
           gscHint: query.gscHint,
         })
+      }
+      syncShopFromEntitlement(data)
+      if (platform === 'odoo' && data?.aeo_connect_shop_url && !data?.aeo_connect_database) {
+        setDatabase((prev) => prev || odooDatabaseDefault(data.aeo_connect_shop_url))
+      }
+      if (data?.allowed && data?.sale_order_name) {
+        const commerce = normalizeCommerceSite(keepHttps(data.aeo_site_url || ''))
+        const hasLineShop = Boolean((data.aeo_connect_shop_url || '').trim())
+        if (commerce || hasLineShop) {
+          if (commerce) {
+            setSiteUrl(commerce)
+            persistOrder({ license: key, site: commerce, githubLogin })
+            writeOrderQuery({
+              license: key,
+              site: commerce,
+              githubLogin,
+              gscHint: query.gscHint,
+            })
+          }
+          setLicense(key)
+          setStarted(true)
+          setStep(1)
+          if (hasLineShop) setStatusBusy(false)
+        }
       }
       return data
     } catch (err) {
@@ -406,7 +512,7 @@ export default function Wizard({ lang: langProp }) {
     if (boot.license) {
       setLicenseKey(boot.license)
       setLicense(boot.license)
-      consumeKey(boot.license)
+      consumeKey(boot.license, boot.site)
     } else {
       setEntitlement({
         allowed: false,
@@ -418,14 +524,26 @@ export default function Wizard({ lang: langProp }) {
 
   useEffect(() => {
     if (!entitlement?.allowed || !query.license) return
-    const url = keepHttps(entitlement.aeo_site_url || '')
-    if (!url) return
-    setSiteUrl(url)
+    const commerce = normalizeCommerceSite(keepHttps(entitlement.aeo_site_url || ''))
+    const hasLineShop = Boolean((entitlement.aeo_connect_shop_url || '').trim())
+    if (!commerce && !hasLineShop) return
+    if (commerce) setSiteUrl(commerce)
     setLicense(query.license)
     setStarted(true)
     setStep(1)
-    setStatusBusy(true)
-    api.connection.status().then((row) => {
+    syncShopFromEntitlement(entitlement)
+    let cancelled = false
+    const needsBlockingRefresh = !hasLineShop
+    if (needsBlockingRefresh) setStatusBusy(true)
+    Promise.all([
+      api.connection.status().catch(() => null),
+      fetchAndMergeOrderLine(query.license, entitlement),
+    ]).then(([row, merged]) => {
+      if (cancelled) return
+      if (merged && merged !== entitlement) {
+        setEntitlement(merged)
+        syncShopFromEntitlement(merged)
+      }
       if (!row) return
       setConnection(row)
       const by = platformsMap(row)
@@ -433,8 +551,19 @@ export default function Wizard({ lang: langProp }) {
       if (current.platform) setPlatform(current.platform)
       if (current.database) setDatabase(current.database)
       if (current.username) setUsername(current.username)
-    }).catch(() => {}).finally(() => setStatusBusy(false))
-  }, [entitlement, query.license])
+    }).finally(() => {
+      if (!cancelled) setStatusBusy(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [
+    entitlement?.allowed,
+    entitlement?.key,
+    entitlement?.aeo_connect_shop_url,
+    entitlement?.aeo_site_url,
+    query.license,
+  ])
 
   const apiGoogleConnected = Boolean(
     status?.google?.modes?.oauth?.connected || google?.auth?.modes?.oauth?.connected
@@ -451,9 +580,11 @@ export default function Wizard({ lang: langProp }) {
   const complete = { 1: anyConnected, 2: googleDone, 3: aeoDone, 4: seoDone, 5: Boolean(inject?.ok) }
   const canContinue = step === 1
     ? Boolean(entitlement?.allowed)
-    : step === 5
-      ? Boolean(pack?.seo)
-      : (step < 6 && Boolean(complete[step]))
+    : step === 2
+      ? !loading && (Boolean(google) || Boolean(error))
+      : step === 5
+        ? Boolean(pack?.seo)
+        : (step < 6 && Boolean(complete[step]))
   const jobPayload = useMemo(
     () => buildJobPayload({
       entitlement,
@@ -525,12 +656,31 @@ export default function Wizard({ lang: langProp }) {
   }, [step, entitlement])
 
   useEffect(() => {
+    if (!google) return
+    const proposedTitle = String(google.remediation?.title || '').trim()
+    const proposedMeta = String(google.remediation?.meta_description || '').trim()
+    const proposedH1 = String(google.remediation?.h1 || '').trim()
+    const hostName = businessFromHost(siteUrl)
+    const stub = hostName.trim().toLowerCase()
+    const isStub = (value) => {
+      const current = String(value || '').trim().toLowerCase()
+      return !current || current === stub
+    }
+    setTopic((prev) => (isStub(prev) ? (proposedH1 || proposedTitle || hostName) : prev))
+    setBusinessName((prev) => (isStub(prev) ? (proposedH1 || hostName) : prev))
+    setContext((prev) => {
+      if (String(prev || '').trim()) return prev
+      return [proposedMeta, proposedTitle].filter(Boolean).join('\n')
+    })
+  }, [google, siteUrl])
+
+  useEffect(() => {
     if (step !== 3 || packAutoRef.current || !entitlement?.allowed) return
-    if (!(topic.trim() || businessName.trim())) return
+    if (!context.trim() || !(topic.trim() || businessName.trim())) return
     packAutoRef.current = true
     runPack()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, entitlement])
+  }, [step, entitlement, context, topic, businessName])
 
   useEffect(() => {
     if (step === 5 && inject?.ok) setStep(6)
@@ -573,19 +723,25 @@ export default function Wizard({ lang: langProp }) {
     setError(null)
     setLoading(true)
     try {
+      const odooSecret =
+        platform === 'odoo'
+          ? (odooAuthMode === 'apikey' ? odooApiKey : odooPassword)
+          : ''
       const data = await api.connection.register({
         license: licenseKey,
         platform,
         url: siteUrl,
+        shop_url: lineShopUrl || undefined,
         database: database || undefined,
         username: username || undefined,
-        api_key: apiKey || undefined,
+        api_key: platform === 'odoo' ? odooSecret || undefined : undefined,
         ws_key: wsKey || undefined,
         consumer_key: consumerKey || undefined,
         consumer_secret: consumerSecret || undefined,
       })
       setConnection(data)
-      setApiKey('')
+      setOdooPassword('')
+      setOdooApiKey('')
       setWsKey('')
       setConsumerSecret('')
     } catch (err) {
@@ -642,14 +798,15 @@ export default function Wizard({ lang: langProp }) {
     setLoading(true)
     try {
       const assistant = new URLSearchParams(window.location.search).get('assistant') || ''
+      const oauthSite = keepHttps(entitlement?.aeo_site_url || siteUrl)
       const data = await api.google.oauthStart({
         license: licenseKey,
-        site: siteUrl,
+        site: oauthSite,
         github_login: githubLogin || undefined,
         assistant: assistant || undefined,
       })
       if (data?.auth_url) {
-        persistOrder({ license: licenseKey, site: siteUrl, githubLogin, assistant })
+        persistOrder({ license: licenseKey, site: oauthSite, githubLogin, assistant })
         window.location.href = data.auth_url
         return
       }
@@ -665,18 +822,17 @@ export default function Wizard({ lang: langProp }) {
     if (!googleConnected) return
     setError(null)
     setGoogleRevokeBusy(true)
+    setGoogleHint(false)
+    writeOrderQuery({
+      license: licenseKey,
+      site: keepHttps(entitlement?.aeo_site_url || siteUrl),
+      githubLogin,
+      gscHint: false,
+    })
     try {
       const data = await api.google.oauthRevoke()
-      setGoogleHint(false)
       if (data?.status) setStatus((prev) => ({ ...(prev || {}), google: data.status }))
-      else setStatus((prev) => prev)
       setGoogle((prev) => (prev ? { ...prev, auth: data?.status || prev.auth } : prev))
-      writeOrderQuery({
-        license: licenseKey,
-        site: siteUrl,
-        githubLogin,
-        gscHint: false,
-      })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -744,7 +900,12 @@ export default function Wizard({ lang: langProp }) {
 
   const allowed = Boolean(entitlement?.allowed)
   const showGate = !started
-  const confirmedSite = keepHttps(entitlement?.aeo_site_url || (allowed ? siteUrl : ''))
+  const commerceSite = normalizeCommerceSite(keepHttps(entitlement?.aeo_site_url || ''))
+    || normalizeCommerceSite(keepHttps(siteUrl))
+  const confirmedSite = commerceSite || (allowed ? normalizeCommerceSite(keepHttps(siteUrl)) : '')
+  const lineShopUrl = orderLineShopUrl(entitlement, connection)
+  const shopHostnameFromOrder = Boolean(lineShopUrl)
+  const canConnectPlatform = shopHostnameFromOrder
   const acquireUrl = PRODUCT_PAGE_URL
   const acquireLabel = t.wizard.acquire
   const selected = PLATFORMS.find((p) => p.id === platform) || PLATFORMS[0]
@@ -812,7 +973,7 @@ export default function Wizard({ lang: langProp }) {
             <button
               type="button"
               className="btn"
-              disabled={!confirmedSite || checking}
+              disabled={checking || (!confirmedSite && !orderLineShopUrl(entitlement, connection))}
               onClick={() => {
                 setSiteUrl(confirmedSite)
                 setLicense(licenseKey)
@@ -844,12 +1005,18 @@ export default function Wizard({ lang: langProp }) {
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
           {t.wizard.intro}
         </p>
-        <div className="btn-row" style={{ marginBottom: '0.85rem' }}>
-          <span className="badge badge-success">{t.wizard.withOrder.replace('{name}', entitlement.sale_order_name || '')}</span>
-          <span className="badge badge-muted">{hostLabel(siteUrl)}</span>
+        <div className="wizard-order-badges">
+          <span className="badge badge-success">
+            {t.wizard.orderConfirmed.replace('{name}', entitlement.sale_order_name || '')}
+          </span>
+          {commerceSite ? (
+            <span className="badge badge-muted" title={t.wizard.commerceSiteHint}>
+              {t.wizard.commerceSite}: {hostLabel(commerceSite)}
+            </span>
+          ) : null}
         </div>
         <p style={{ marginTop: 0 }}>
-          <a href={`/?${new URLSearchParams({ ...(licenseKey ? { license: licenseKey } : {}), ...(siteUrl ? { site: siteUrl } : {}), assistant: 'catalog' }).toString()}`}>{t.catalog.open}</a>
+          <a href={`/?${new URLSearchParams({ ...(licenseKey ? { license: licenseKey } : {}), ...(commerceSite ? { site: commerceSite } : {}), assistant: 'catalog' }).toString()}`}>{t.catalog.open}</a>
         </p>
         <JobProgress
           progress={progress}
@@ -887,7 +1054,7 @@ export default function Wizard({ lang: langProp }) {
           id="plan-de-trabajo"
           kicker={t.step.planKicker}
           title={t.step.plan}
-          summary={`${entitlement.sale_order_name || hostLabel(siteUrl)} · ${progress.percent}%`}
+          summary={`${entitlement.sale_order_name || hostLabel(commerceSite || siteUrl)} · ${progress.percent}%`}
           open={openPlan}
           onToggle={() => setOpenPlan((value) => !value)}
         >
@@ -895,12 +1062,12 @@ export default function Wizard({ lang: langProp }) {
             nodes={jobTree.length ? jobTree : localTree}
             rootLabel={
               step === 2
-                ? `${entitlement.sale_order_name || hostLabel(siteUrl)} · ${t.tree.solvingAnalysis}`
+                ? `${entitlement.sale_order_name || hostLabel(commerceSite || siteUrl)} · ${t.tree.solvingAnalysis}`
                 : step === 3
-                  ? `${entitlement.sale_order_name || hostLabel(siteUrl)} · ${t.tree.solvingAeo}`
+                  ? `${entitlement.sale_order_name || hostLabel(commerceSite || siteUrl)} · ${t.tree.solvingAeo}`
                   : step === 4
-                    ? `${entitlement.sale_order_name || hostLabel(siteUrl)} · ${t.tree.solvingSeo}`
-                    : (entitlement.sale_order_name || hostLabel(siteUrl))
+                    ? `${entitlement.sale_order_name || hostLabel(commerceSite || siteUrl)} · ${t.tree.solvingSeo}`
+                    : (entitlement.sale_order_name || hostLabel(commerceSite || siteUrl))
             }
             solving={step >= 2 && step <= 4}
             activeLabel={step === 2 ? t.progress.google : step === 3 ? t.tree.aeo : step === 4 ? t.tree.seo : ''}
@@ -957,16 +1124,30 @@ export default function Wizard({ lang: langProp }) {
         >
       {step === 1 && (
         <>
-          <div className="form-row">
-            <span className="gate-site-label">{t.wizard.orderSite}</span>
-            <p className="gate-site-value">{hostLabel(siteUrl)}</p>
-          </div>
+          {!shopHostnameFromOrder && commerceSite ? (
+            <div className="connect-hostnames">
+              <div className="connect-hostname-block">
+                <span className="gate-site-label">{t.wizard.commerceSite}</span>
+                <p className="gate-site-value">{hostLabel(commerceSite)}</p>
+                <p className="connect-mode-hint">{t.wizard.commerceSiteHint}</p>
+              </div>
+            </div>
+          ) : null}
           {statusBusy ? (
             <WorkingForYou message={t.connect.checking} />
           ) : (
             <>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                 {t.connect.intro}
+              </p>
+              <p className="connect-info-hint" style={{ marginBottom: '1rem' }}>
+                <svg className="connect-info-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    fill="currentColor"
+                    d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5a1.25 1.25 0 1 1 0 2.5A1.25 1.25 0 0 1 12 7Zm-1 4h2v7h-2v-7Z"
+                  />
+                </svg>
+                <span>{t.connect.metadataInjectHint}</span>
               </p>
               <div className="platform-grid">
                 {PLATFORMS.map((p) => (
@@ -1021,17 +1202,78 @@ export default function Wizard({ lang: langProp }) {
               ) : (
                 <>
                   <form onSubmit={saveConnection}>
+                    {platform === 'odoo' ? (
+                      <div className="auth-switcher-wrap">
+                        <p className="auth-switcher-kicker">{t.connect.odooAuthKicker}</p>
+                        <div className="auth-switcher" role="tablist" aria-label={t.connect.odooAuthKicker}>
+                          <button
+                            type="button"
+                            role="tab"
+                            aria-selected={odooAuthMode === 'user'}
+                            className={odooAuthMode === 'user' ? 'active' : ''}
+                            disabled={loading}
+                            onClick={() => setOdooAuthMode('user')}
+                          >
+                            {t.connect.odooAuthUser}
+                          </button>
+                          <button
+                            type="button"
+                            role="tab"
+                            aria-selected={odooAuthMode === 'apikey'}
+                            className={odooAuthMode === 'apikey' ? 'active' : ''}
+                            disabled={loading}
+                            onClick={() => setOdooAuthMode('apikey')}
+                          >
+                            {t.connect.odooAuthApi}
+                          </button>
+                        </div>
+                        <p className="connect-mode-hint">
+                          {odooAuthMode === 'apikey' ? t.connect.odooHelpApi : t.connect.odooHelpUser}
+                        </p>
+                      </div>
+                    ) : null}
+                    {!shopHostnameFromOrder ? (
+                      <p className="error-msg" role="alert">
+                        {t.connect.shopUrlMissingOnOrder}
+                      </p>
+                    ) : null}
                     <div className="connect-form-grid">
                       {platform === 'odoo' && (
                         <>
                           <div className="form-row">
-                            <label htmlFor="aeo-user">{t.connect.user}</label>
-                            <input id="aeo-user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t.connect.user} autoComplete="off" />
+                            <label htmlFor="aeo-user">{t.connect.odooLogin}</label>
+                            <input
+                              id="aeo-user"
+                              value={username}
+                              onChange={(e) => setUsername(e.target.value)}
+                              placeholder="admin"
+                              autoComplete="username"
+                            />
                           </div>
-                          <div className="form-row">
-                            <label htmlFor="aeo-key">{t.connect.password}</label>
-                            <input id="aeo-key" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" />
-                          </div>
+                          {odooAuthMode === 'user' ? (
+                            <div className="form-row">
+                              <label htmlFor="aeo-odoo-pass">{t.connect.password}</label>
+                              <input
+                                id="aeo-odoo-pass"
+                                type="password"
+                                value={odooPassword}
+                                onChange={(e) => setOdooPassword(e.target.value)}
+                                autoComplete="off"
+                              />
+                            </div>
+                          ) : (
+                            <div className="form-row">
+                              <label htmlFor="aeo-odoo-api">{t.connect.odooApiKey}</label>
+                              <input
+                                id="aeo-odoo-api"
+                                type="password"
+                                value={odooApiKey}
+                                onChange={(e) => setOdooApiKey(e.target.value)}
+                                autoComplete="off"
+                                spellCheck={false}
+                              />
+                            </div>
+                          )}
                           <div className="form-row span-full">
                             <label htmlFor="aeo-db">{t.connect.db}</label>
                             <input id="aeo-db" value={database} onChange={(e) => setDatabase(e.target.value)} placeholder="osh" autoComplete="off" />
@@ -1057,7 +1299,10 @@ export default function Wizard({ lang: langProp }) {
                         </>
                       )}
                     </div>
-                    <PlatformActionButton platformId={platform} type="submit" disabled={loading}>
+                    {error ? (
+                      <p className="error-msg" role="alert">{error}</p>
+                    ) : null}
+                    <PlatformActionButton platformId={platform} type="submit" disabled={loading || !canConnectPlatform}>
                       {loading ? t.connect.checking : t.connect.connectAction}
                     </PlatformActionButton>
                   </form>
@@ -1113,6 +1358,19 @@ export default function Wizard({ lang: langProp }) {
                       {g.stateLabel}
                     </span>
                     {g.displayMessage ? ` — ${g.displayMessage}` : ''}
+                    {g.name === 'GSC property visible' && g.detail ? (
+                      <ul>
+                        {String(g.detail).split('||').filter(Boolean).map((host) => (
+                          <li key={host}>{host}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {g.action_url ? (
+                      <>
+                        {' '}
+                        <a href={g.action_url} target="_blank" rel="noreferrer">{t.gaps.propertyAdd}</a>
+                      </>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -1227,7 +1485,7 @@ export default function Wizard({ lang: langProp }) {
         </AccordionPanel>
       </Accordion>
 
-      {error && <p className="error-msg">{error}</p>}
+      {error && !(step === 1 && !showLive) ? <p className="error-msg" role="alert">{error}</p> : null}
 
       <div className="wizard-nav">
         <button type="button" className="btn btn-secondary btn-compact" disabled={step === 1 || loading} onClick={goBack}>
@@ -1235,9 +1493,16 @@ export default function Wizard({ lang: langProp }) {
           <span>{t.step.back}</span>
         </button>
         {step < 6 ? (
-          <button type="button" className="btn btn-compact" disabled={!canContinue || loading} onClick={goNext}>
-            <span>{step === 4 || (step === 5 && !inject?.ok) ? t.step.inject : t.step.continue}</span>
-            <IconChevronRight />
+          <button
+            type="button"
+            className={`btn btn-compact${loading ? ' btn-busy' : ''}`}
+            disabled={!canContinue || loading}
+            aria-busy={loading || undefined}
+            onClick={goNext}
+          >
+            {loading ? <span className="btn-spinner" aria-hidden="true" /> : null}
+            <span>{loading ? t.step.running : (step === 4 || (step === 5 && !inject?.ok) ? t.step.inject : t.step.continue)}</span>
+            {loading ? null : <IconChevronRight />}
           </button>
         ) : (
           <span className="badge badge-muted">{t.step.last}</span>

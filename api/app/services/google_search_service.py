@@ -290,16 +290,93 @@ async def gsc_sites() -> Dict[str, Any]:
         return {"ok": False, "error": str(exc)[:200], "sites": []}
 
 
-def _check(name: str, passed: bool, message: str, detail: Optional[str] = None) -> Dict[str, Any]:
+GSC_ADD_PROPERTY_URL = "https://search.google.com/search-console/welcome"
+
+_PLACEHOLDER_MARKERS = (
+    "my website",
+    "this is the homepage of the website",
+    "your logo",
+    "sucompañía",
+    "sucompania",
+    "nombre de la empresa",
+    "somos un equipo de personas apasionadas",
+    "we are a team of passionate",
+    "info@yourcompany",
+)
+
+
+def _host_key(value: str) -> str:
+    raw = (value or "").strip().lower()
+    if not raw:
+        return ""
+    if raw.startswith("sc-domain:"):
+        return raw.split(":", 1)[1].strip().lstrip(".")
+    if "://" not in raw:
+        raw = "https://" + raw
+    try:
+        parsed = urlparse(raw)
+    except Exception:
+        return ""
+    host = (parsed.hostname or "").strip().lower()
+    if not host:
+        return ""
+    port = parsed.port
+    if port and port not in (80, 443):
+        return f"{host}:{port}"
+    return host
+
+
+def property_matches_site(site_url: str, properties: List[Dict[str, Any]]) -> bool:
+    """True only when this hostname is one of the Search Console properties."""
+    wanted = _host_key(site_url)
+    if not wanted:
+        return False
+    wanted_host = wanted.split(":", 1)[0]
+    for entry in properties or []:
+        raw = str((entry or {}).get("siteUrl") or "")
+        key = _host_key(raw)
+        if not key:
+            continue
+        if key == wanted or key == wanted_host:
+            return True
+        if raw.strip().lower().startswith("sc-domain:") and (
+            wanted_host == key or wanted_host.endswith("." + key)
+        ):
+            return True
+    return False
+
+
+def text_is_placeholder(value: str) -> bool:
+    raw = (value or "").strip().lower()
+    if not raw:
+        return True
+    if raw in {"home | my website", "my website", "my odoo website", "odoo website"}:
+        return True
+    return any(marker in raw for marker in _PLACEHOLDER_MARKERS)
+
+
+def company_profile_ready(title: str, description: str, html: str) -> bool:
+    """False when the page still looks like a stock storefront with no company purpose."""
+    blob = " ".join(x for x in (title, description, html) if x).lower()
+    if not blob.strip():
+        return False
+    hits = sum(1 for marker in _PLACEHOLDER_MARKERS if marker in blob)
+    return hits < 2
+
+
+def _check(name: str, passed: bool, message: str, detail: Optional[str] = None, action_url: Optional[str] = None) -> Dict[str, Any]:
     item = {"name": name, "passed": passed, "message": message}
     if detail:
         item["detail"] = detail
+    if action_url:
+        item["action_url"] = action_url
     return item
 
 
 async def _fetch_text(url: str) -> Dict[str, Any]:
     try:
-        async with httpx.AsyncClient(timeout=12.0, follow_redirects=True, headers={"User-Agent": "AEO-generator/1.0"}) as client:
+        timeout = httpx.Timeout(8.0, connect=3.0)
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers={"User-Agent": "AEO-generator/1.0"}) as client:
             r = await client.get(url)
             return {"ok": r.status_code < 400, "status_code": r.status_code, "text": r.text or "", "final_url": str(r.url)}
     except Exception as exc:
@@ -325,17 +402,28 @@ async def readiness(site_url: str, mode: Optional[str] = None) -> Dict[str, Any]
             page.title,
         )
     )
-    checks.append(_check("Title tag", bool(page.title), page.title or "No <title> found"))
-    checks.append(
-        _check(
-            "Meta description",
-            bool(page.meta_description),
-            (page.meta_description[:160] + "…") if page.meta_description and len(page.meta_description) > 160 else (page.meta_description or "Missing meta description"),
-        )
-    )
+    title = (page.title or "").strip()
+    if not title:
+        checks.append(_check("Title tag", False, "No <title> found"))
+    elif text_is_placeholder(title):
+        checks.append(_check("Title tag", False, "PLACEHOLDER_TITLE"))
+    else:
+        checks.append(_check("Title tag", True, title))
+    meta = (page.meta_description or "").strip()
+    if not meta:
+        checks.append(_check("Meta description", False, "Missing meta description"))
+    elif text_is_placeholder(meta):
+        checks.append(_check("Meta description", False, "PLACEHOLDER_META"))
+    else:
+        shown = (meta[:160] + "…") if len(meta) > 160 else meta
+        checks.append(_check("Meta description", True, shown))
     checks.append(_check("H1 present", bool(page.h1_list), f"{len(page.h1_list or [])} H1 tag(s)"))
 
-    robots = await _fetch_text(urljoin(origin + "/", "robots.txt"))
+    robots, sitemap, home = await asyncio.gather(
+        _fetch_text(urljoin(origin + "/", "robots.txt")),
+        _fetch_text(urljoin(origin + "/", "sitemap.xml")),
+        _fetch_text(site_url),
+    )
     robots_ok = bool(robots.get("ok") and "user-agent" in (robots.get("text") or "").lower())
     checks.append(
         _check(
@@ -344,7 +432,6 @@ async def readiness(site_url: str, mode: Optional[str] = None) -> Dict[str, Any]
             f"HTTP {robots.get('status_code')}" if robots.get("status_code") else robots.get("error") or "Not found",
         )
     )
-    sitemap = await _fetch_text(urljoin(origin + "/", "sitemap.xml"))
     sitemap_text = sitemap.get("text") or ""
     sitemap_ok = bool(sitemap.get("ok") and ("<urlset" in sitemap_text.lower() or "<sitemapindex" in sitemap_text.lower()))
     checks.append(
@@ -375,12 +462,41 @@ async def readiness(site_url: str, mode: Optional[str] = None) -> Dict[str, Any]
                 "Access token present" if auth["modes"]["oauth"]["connected"] else "User must grant Search Console access",
             )
         )
-        sites = []
+        host = _host_key(site_url) or site_url
         if auth["modes"]["oauth"]["connected"]:
             listed = await gsc_sites()
             sites = listed.get("sites") or []
-            matched = any(site_url.rstrip("/") in (s.get("siteUrl") or "") or (s.get("siteUrl") or "").rstrip("/") in site_url for s in sites)
-            checks.append(_check("GSC property visible", matched or bool(sites), f"{len(sites)} property(ies) on this account"))
+            hosts = [str(row.get("siteUrl") or "").strip() for row in sites if str(row.get("siteUrl") or "").strip()]
+            matched = property_matches_site(site_url, sites)
+            listed_hosts = "||".join(hosts)
+            if matched:
+                checks.append(
+                    _check(
+                        "GSC property visible",
+                        True,
+                        f"Property matches {host}",
+                        detail=listed_hosts,
+                    )
+                )
+            else:
+                checks.append(
+                    _check(
+                        "GSC property visible",
+                        False,
+                        f"GSC_PROPERTY_MISSING|{host}|{listed_hosts}",
+                        detail=listed_hosts,
+                        action_url=GSC_ADD_PROPERTY_URL,
+                    )
+                )
+        else:
+            checks.append(
+                _check(
+                    "GSC property visible",
+                    False,
+                    f"GSC_PROPERTY_UNREAD|{host}",
+                    action_url=GSC_ADD_PROPERTY_URL,
+                )
+            )
     elif chosen == "service_account":
         sa_ok = auth["modes"]["service_account"]["valid_json"] or auth["modes"]["service_account"]["configured"]
         checks.append(
@@ -405,6 +521,15 @@ async def readiness(site_url: str, mode: Optional[str] = None) -> Dict[str, Any]
                 "Choose OAuth (client consent) or Service Account. Public crawl checks still run.",
             )
         )
+
+    company_ok = company_profile_ready(page.title or "", page.meta_description or "", home.get("text") or "")
+    checks.append(
+        _check(
+            "Company profile",
+            company_ok,
+            "COMPANY_OK" if company_ok else "COMPANY_PLACEHOLDER",
+        )
+    )
 
     passed = sum(1 for c in checks if c["passed"])
     ready = passed >= 4 and page_ok

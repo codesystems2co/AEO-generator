@@ -330,27 +330,36 @@ def consume(
     allowed = raw.get("allowed") is True
     sale_order_name = _clean(raw.get("sale_order_name"))
     site = _clean(raw.get("aeo_site_url"))
+    from app.services.arkiphere_connection import fetch_order_line_public_sync, merge_public_line_fields
+
+    line = fetch_order_line_public_sync(license_key, sale_order_name or "")
     if not allowed:
-        return {
-            **_blocked(license_key),
+        return merge_public_line_fields(
+            {
+                **_blocked(license_key),
+                "sale_order_name": sale_order_name,
+                "aeo_site_url": site,
+                "partner_id": _clean(raw.get("partner_id")),
+                "github_login": _clean(raw.get("github_login")) or login,
+                "open_url": _clean(raw.get("open_url")),
+            },
+            line,
+        )
+    return merge_public_line_fields(
+        {
+            "allowed": True,
+            "key": license_key,
             "sale_order_name": sale_order_name,
+            "sale_order_state": "sale",
             "aeo_site_url": site,
             "partner_id": _clean(raw.get("partner_id")),
             "github_login": _clean(raw.get("github_login")) or login,
             "open_url": _clean(raw.get("open_url")),
-        }
-    return {
-        "allowed": True,
-        "key": license_key,
-        "sale_order_name": sale_order_name,
-        "sale_order_state": "sale",
-        "aeo_site_url": site,
-        "partner_id": _clean(raw.get("partner_id")),
-        "github_login": _clean(raw.get("github_login")) or login,
-        "open_url": _clean(raw.get("open_url")),
-        "message": t("es", "entitlement.confirmed", order=sale_order_name or ""),
-        "cta_url": None,
-        "cta_label": None,
-        "login_url": settings.ARKIPHERE_LOGIN_URL,
-        "consume_error": None,
-    }
+            "message": t("es", "entitlement.confirmed", order=sale_order_name or ""),
+            "cta_url": None,
+            "cta_label": None,
+            "login_url": settings.ARKIPHERE_LOGIN_URL,
+            "consume_error": None,
+        },
+        line,
+    )

@@ -42,7 +42,7 @@ async function request(path, options = {}) {
   const url = `${API_BASE}${path}`
   const res = await fetch(url, {
     ...options,
-    signal: options.signal || AbortSignal.timeout(20000),
+    signal: options.signal || AbortSignal.timeout(180000),
     headers: {
       'Content-Type': 'application/json',
       ...(licenseKey ? { 'X-AEO-License': licenseKey } : {}),
@@ -144,7 +144,11 @@ export const api = {
   wizard: {
     status: () => request('/api/wizard/status'),
     run: (body) => request('/api/wizard/run', { method: 'POST', body: JSON.stringify(body) }),
-    autofix: (body) => request('/api/wizard/google/autofix', { method: 'POST', body: JSON.stringify(body) }),
+    autofix: (body) => request('/api/wizard/google/autofix', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(180000),
+    }),
     injectVerify: (body) => request('/api/wizard/inject-verify', { method: 'POST', body: JSON.stringify(body) }),
     job: (body) => request('/api/wizard/job', { method: 'POST', body: JSON.stringify(body) }),
     reportPdf: async (body) => {
@@ -173,6 +177,11 @@ export const api = {
         site: site || undefined,
       }),
     }),
+    orderLine: (key, sale_order_name) => {
+      const q = new URLSearchParams({ key: key || '' })
+      if (sale_order_name) q.set('sale_order_name', sale_order_name)
+      return request(`/api/entitlement/order-line?${q.toString()}`)
+    },
   },
   catalog: {
     offer: (license) => request(`/api/catalog/offer${license ? `?license=${encodeURIComponent(license)}` : ''}`),

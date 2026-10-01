@@ -1,5 +1,27 @@
 export const ORDER_STORAGE_KEY = 'aeo_order'
 
+/** Commerce site from the order — not the technical shop instance on the order line. */
+export function isGatewayShopHost(site) {
+  const raw = (site || '').trim().toLowerCase()
+  if (!raw) return false
+  try {
+    const host = new URL(raw.includes('://') ? raw : `https://${raw}`).hostname.toLowerCase()
+    return (
+      host.endsWith('.aeo.local')
+      || host === 'localhost'
+      || host.startsWith('127.')
+      || host.startsWith('10.')
+      || host.startsWith('192.168.')
+    )
+  } catch {
+    return raw.includes('.aeo.local') || raw.includes('localhost')
+  }
+}
+
+export function normalizeCommerceSite(site) {
+  return (site || '').trim()
+}
+
 export function restoreOrder() {
   try {
     const raw = sessionStorage.getItem(ORDER_STORAGE_KEY)
@@ -60,7 +82,9 @@ export function readOrderQuery() {
     const q = new URLSearchParams(window.location.search)
     const saved = restoreOrder()
     const license = (q.get('license') || q.get('key') || saved.license || '').trim()
-    const site = (q.get('site') || saved.site || '').trim()
+    const site =
+      normalizeCommerceSite(q.get('site') || '')
+      || normalizeCommerceSite(saved.site || '')
     const githubLogin = (q.get('user') || saved.githubLogin || '').trim()
     const gscHint = q.get('gsc') === 'connected'
     let assistant = ''
@@ -72,10 +96,16 @@ export function readOrderQuery() {
       assistant = saved.assistant.trim()
     }
     if (license || site || assistant || githubLogin) {
-      persistOrder({ license, site, githubLogin, assistant })
+      persistOrder({ license, site: site || undefined, githubLogin, assistant })
     }
     if (gscHint && license && (!q.get('license') || !q.get('site'))) {
-      writeOrderQuery({ license, site, githubLogin, assistant, gscHint: true })
+      writeOrderQuery({
+        license,
+        site: site || undefined,
+        githubLogin,
+        assistant,
+        gscHint: true,
+      })
     }
     return { license, site, githubLogin, assistant, gscHint }
   } catch {

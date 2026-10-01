@@ -17,8 +17,19 @@ def keep_https(value: Optional[str]) -> str:
     if raw.lower().startswith("https://"):
         return raw
     if raw.lower().startswith("http://"):
-        return f"https://{raw[7:]}"
+        return raw
     return f"https://{raw.lstrip('/')}"
+
+
+def normalize_shop_url(value: Optional[str]) -> str:
+    """Platform RPC URL; keep http for local gateway (.local, localhost)."""
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    lower = raw.lower()
+    if lower.startswith("http://") or lower.startswith("https://"):
+        return raw.rstrip("/")
+    return f"http://{raw.lstrip('/')}".rstrip("/")
 
 
 def normalize_host(value: Optional[str]) -> str:
@@ -34,10 +45,55 @@ def normalize_host(value: Optional[str]) -> str:
     return host
 
 
+def is_gateway_shop_host(value: Optional[str]) -> bool:
+    host = normalize_host(normalize_shop_url(value))
+    if not host:
+        return False
+    return (
+        host.endswith(".aeo.local")
+        or host == "localhost"
+        or host.startswith("127.")
+        or host.startswith("10.")
+        or host.startswith("192.168.")
+    )
+
+
 def hosts_match(left: Optional[str], right: Optional[str]) -> bool:
     a = normalize_host(left)
     b = normalize_host(right)
     return bool(a and b and a == b)
+
+
+def resolve_register_shop_url(
+    order_line_shop: Optional[str],
+    body_shop_url: Optional[str] = None,
+    body_url: Optional[str] = None,
+) -> str:
+    """
+    One shop hostname per order line (Arkiphere SoT).
+    When the line has a URL, the wizard must not override it.
+    """
+    line_url = normalize_shop_url(order_line_shop)
+    typed = normalize_shop_url(body_shop_url) or normalize_shop_url(body_url)
+    if line_url:
+        if typed and normalize_host(typed) and normalize_host(typed) != normalize_host(line_url):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "La URL de la tienda viene de la línea del pedido en Arkiphere. "
+                    "Solo hay un hostname por pedido; no se puede cambiar desde el asistente."
+                ),
+            )
+        return line_url
+    if typed:
+        return typed
+    raise HTTPException(
+        status_code=400,
+        detail=(
+            "El pedido no tiene URL de tienda en la línea Optimizator. "
+            "Configúrela en Arkiphere (pedido / línea) antes de conectar."
+        ),
+    )
 
 
 def extract_license(

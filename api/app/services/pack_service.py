@@ -13,7 +13,7 @@ from app.services.aeo_service import generate_aeo_suggestions
 from app.services.chat_service import check_ollama_health
 from app.services.keywords_service import extract_keywords
 from app.services.meta_service import generate_meta_tags
-from app.services.schema_context import prompt_facts, snapshot as schema_snapshot
+from app.services.schema_context import customer_reading, snapshot as schema_snapshot
 from app.services.seo_score_service import calculate_seo_score
 
 PACK_SYSTEM = (
@@ -290,17 +290,15 @@ async def generate_pack(
 ) -> Dict[str, Any]:
     topic = (topic or business_name or url or "Untitled").strip()
     snap = await schema_snapshot(url) if url else {}
-    graph_facts = prompt_facts(snap, extra=" | ".join(x for x in (business_name, context) if x))
-    facts = graph_facts or " | ".join(x for x in (business_name, url, context) if x)
-    health = await check_ollama_health()
-    pack = _heuristic_pack(topic, facts or context, url)
+    reading = customer_reading(snap, locale or "es") if snap else ""
+    written = " ".join(x for x in (business_name, context) if x and "Page title:" not in x)
+    facts = reading or written
+    health = {"status": "heuristic"}
+    pack = _heuristic_pack(topic, written or topic, url)
+    if reading:
+        pack["aeo"]["summary"] = reading
     backend = "heuristic"
     llm = None
-    if health.get("status") == "ok":
-        llm = await _ollama_pack(topic, facts, locale or "en")
-        if llm:
-            pack = _merge_ollama(pack, llm)
-            backend = "ollama"
     tree = build_tree(topic, pack["aeo"], pack["seo"])
     resume = f"{topic}\n" + "\n".join(_resume_lines(tree))
     return {

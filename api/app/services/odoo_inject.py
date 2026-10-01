@@ -56,12 +56,12 @@ def auth_failure_message(username: str, api_key: str) -> str:
             "Odoo rechazó el acceso. La contraseña guardada es igual al usuario. "
             "Vuelva a conectar la tienda con la clave API de Odoo."
         )
-    return "Odoo rechazó el usuario o la contraseña. Vuelva a conectar la tienda."
+    return "Odoo rechazó el usuario o la clave. Use contraseña de admin o clave API de Odoo."
 
 
 def probe_login(url: str, database: str, username: str, api_key: str) -> Dict[str, Any]:
     if not ((url or "").strip() and (database or "").strip() and (username or "").strip() and (api_key or "").strip()):
-        return {"ok": False, "message": "Faltan base, usuario o contraseña de Odoo."}
+        return {"ok": False, "message": "Faltan base, usuario o clave (contraseña o API key) de Odoo."}
     import socket
 
     previous = socket.getdefaulttimeout()
@@ -73,6 +73,12 @@ def probe_login(url: str, database: str, username: str, api_key: str) -> Dict[st
         if "authentication" in str(exc).lower():
             return {"ok": False, "message": auth_failure_message(username, api_key)}
         return {"ok": False, "message": "No se pudo conectar con Odoo. Revisa base, usuario y contraseña."}
+    except OSError:
+        host = (url or "").strip() or "la tienda"
+        return {
+            "ok": False,
+            "message": f"El generador no alcanza {host}. La base, el usuario y la contraseña no se han comprobado.",
+        }
     except Exception:
         return {"ok": False, "message": "No se pudo conectar con Odoo. Revisa base, usuario y contraseña."}
     finally:
