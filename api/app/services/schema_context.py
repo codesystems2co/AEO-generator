@@ -151,18 +151,9 @@ def customer_reading(snapshot_data: Dict[str, Any], locale: str = "es") -> str:
 
 
 def prompt_facts(snapshot_data: Dict[str, Any], extra: str = "") -> str:
-    parts = [
-        f"Hostname: {snapshot_data.get('host') or ''}",
-        f"Live URL: {snapshot_data.get('final_url') or snapshot_data.get('url') or ''}",
-        f"Page title: {snapshot_data.get('title') or '(none)'}",
-        f"H1: {snapshot_data.get('h1') or '(none)'}",
-        f"Meta: {snapshot_data.get('meta_description') or '(none)'}",
-        f"Schema types: {', '.join(snapshot_data.get('schema_types') or []) or '(none)'}",
-        f"Internal graph: {', '.join((snapshot_data.get('internal_links') or [])[:8]) or '(none)'}",
-    ]
-    ld = snapshot_data.get("json_ld") or []
-    if ld:
-        parts.append("JSON-LD snapshot: " + json.dumps(ld[:2], ensure_ascii=False)[:900])
-    if extra:
-        parts.append(f"Business facts: {extra}")
-    return "\n".join(parts)
+    """Human reading of the crawl. Extra business notes are appended as a sentence."""
+    reading = customer_reading(snapshot_data, "es")
+    note = (extra or "").strip()
+    if note and "Page title:" not in note and "Internal graph:" not in note:
+        reading = f"{reading} {note}".strip()
+    return reading

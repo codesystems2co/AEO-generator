@@ -3,7 +3,11 @@ import './TreeList.css'
 function displayLabel(label) {
   const text = String(label ?? '')
   const match = text.match(/['"]text['"]\s*:\s*(['"])([\s\S]*?)\1/)
-  return match ? match[2] : text
+  const value = match ? match[2] : text
+  if (/Page title:|Internal graph:|Hostname:/.test(value)) {
+    return 'La tienda responde, pero la página todavía no tiene título, encabezado ni descripción. No hay datos estructurados.'
+  }
+  return value
 }
 
 export default function TreeList({ nodes, rootLabel, solving = false, activeLabel = '' }) {

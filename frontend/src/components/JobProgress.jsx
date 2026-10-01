@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './JobProgress.css'
 
 const ICONS = {
@@ -46,11 +46,17 @@ export default function JobProgress({
   downloadingLabel,
   tasksKicker,
   tasksTitle,
+  focusDownload,
 }) {
   const percent = progress?.percent || 0
   const items = progress?.items || []
   const done = items.filter((item) => item.done).length
   const [openTasks, setOpenTasks] = useState(false)
+  const downloadRef = useRef(null)
+  useEffect(() => {
+    if (!canDownload || !focusDownload) return
+    downloadRef.current?.focus()
+  }, [canDownload, focusDownload])
   return (
     <section className="job-progress" aria-label={kicker || 'Progress'}>
       <div className="job-progress-head">
@@ -108,8 +114,17 @@ export default function JobProgress({
       </div>
       {canDownload ? (
         <div className="job-progress-actions">
-          <button type="button" className="btn" disabled={downloading} onClick={onDownload}>
-            {downloading ? (downloadingLabel || 'Preparing…') : (downloadLabel || 'Download PDF')}
+          <button
+            ref={downloadRef}
+            type="button"
+            className="btn btn-download"
+            disabled={downloading}
+            onClick={onDownload}
+          >
+            <svg className="btn-download-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M6 2h8l6 6v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V9h5.5L13 3.5ZM8 13h3v4h2v-4h3l-4-4-4 4Z" />
+            </svg>
+            {downloading ? (downloadingLabel || 'Preparing…') : (downloadLabel || 'Descargar Informe')}
           </button>
         </div>
       ) : (

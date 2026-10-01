@@ -87,6 +87,21 @@ function keepHttps(value) {
   return `https://${v.replace(/^\/+/, '')}`
 }
 
+function readableCrawl(text, host) {
+  const raw = String(text || '')
+  if (!/Page title:|Internal graph:|Hostname:/.test(raw)) return raw
+  const name = host || 'la tienda'
+  return `La tienda ${name} responde, pero la página todavía no tiene título, encabezado ni descripción. No hay datos estructurados.`
+}
+
+function reportFileName(url) {
+  const host = hostLabel(url).replace(/:\d+$/, '').replace(/[^a-zA-Z0-9.-]+/g, '') || 'sitio'
+  const now = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`
+  return `${host}_${stamp}.pdf`
+}
+
 function hostLabel(url) {
   try {
     return new URL(keepHttps(url)).host || url
@@ -114,6 +129,17 @@ function friendlyGapMessage(name, message, connected, t) {
   }
   if (name === 'Company profile' && message === 'COMPANY_OK') {
     return t.gaps.companyOk
+  }
+  if (name === 'GSC property visible' && String(message || '').startsWith('GSC_PROPERTY_PORT')) {
+    const parts = String(message).split('|')
+    const host = parts[1] || ''
+    const bare = parts[2] || host.split(':')[0]
+    const hosts = (parts.slice(3).join('|') || '').split('||').filter(Boolean)
+    const list = hosts.length ? hosts.join(', ') : t.gaps.propertyNone
+    return t.gaps.propertyPort
+      .replace('{host}', host)
+      .replace('{bare}', bare)
+      .replace('{hosts}', list)
   }
   if (name === 'GSC property visible' && String(message || '').startsWith('GSC_PROPERTY_MISSING')) {
     const parts = String(message).split('|')
@@ -705,7 +731,7 @@ export default function Wizard({ lang: langProp }) {
       const href = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = href
-      link.download = filename
+      link.download = reportFileName(siteUrl || commerceSite)
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -1026,6 +1052,7 @@ export default function Wizard({ lang: langProp }) {
           canDownload={canDownloadPdf}
           kicker={t.progress.kicker}
           hint={t.progress.hint}
+          focusDownload={Boolean(inject?.ok)}
           downloadLabel={t.progress.download}
           downloadingLabel={t.progress.downloading}
           tasksKicker={t.progress.tasksKicker}
@@ -1422,7 +1449,7 @@ export default function Wizard({ lang: langProp }) {
           {pack?.aeo && (
             <>
               <p style={{ marginTop: '1rem' }}><strong>{pack.aeo.suggested_title}</strong></p>
-              <p style={{ color: 'var(--text-muted)' }}>{pack.aeo.summary}</p>
+              <p style={{ color: 'var(--text-muted)' }}>{readableCrawl(pack.aeo.summary, hostLabel(siteUrl))}</p>
               <TreeList
                 nodes={(pack.tree || []).filter((n) => n.label === 'AEO')}
                 rootLabel={`${t.tree.aeo} · ${t.tree.solvingAeo}`}

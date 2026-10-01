@@ -10,7 +10,7 @@ const COPY = {
     progress: {
       kicker: 'Asistente en curso',
       hint: 'El informe se entrega al terminar conexión, Google Analysis, AEO, SEO y publicación.',
-      download: 'Descargar informe PDF',
+      download: 'Descargar Informe',
       downloading: 'Preparando el informe…',
       connect: 'Conexión',
       connectDetail: 'Su tienda',
@@ -297,6 +297,7 @@ const COPY = {
       companyMissing: 'El sitio parece un despliegue nuevo: no hay nombre de empresa ni propósito. Configure en la tienda quién es la empresa y a qué se dedica.',
       placeholderContent: 'Sigue el texto de fábrica. Indique el sector y los datos de la empresa en la tienda.',
       companyOk: 'La página ya presenta la empresa',
+      propertyPort: 'El hostname {bare} sí está en la cuenta, pero sin el puerto. La tienda usa {host}. Search Console no tiene esa dirección con puerto. Hostnames de la cuenta: {hosts}.',
       propertyMissing: 'Hay conexión con Google Search, pero no encontramos {host}. Hostnames de la cuenta: {hosts}.',
       propertyNone: 'ninguno',
       propertyUnread: 'Hay conexión con Google Search, pero no encontramos {host}. Hostnames de la cuenta: {hosts}.',
@@ -323,7 +324,7 @@ const COPY = {
     progress: {
       kicker: 'Assistant in progress',
       hint: 'The report is delivered after connection, Google Analysis, AEO, SEO and publishing.',
-      download: 'Download PDF report',
+      download: 'Download report',
       downloading: 'Preparing the report…',
       connect: 'Connection',
       connectDetail: 'Your shop',
@@ -610,6 +611,7 @@ const COPY = {
       companyMissing: 'This site looks like a fresh deploy: company name and purpose are still the defaults. Set who the company is and what it does in the shop.',
       placeholderContent: 'Still the default text. Set the business sector and company details in the shop.',
       companyOk: 'The page already presents the company',
+      propertyPort: '{bare} is on the account, without the port. The shop uses {host}. Search Console does not have that address with the port. Hostnames on the account: {hosts}.',
       propertyMissing: 'Google Search is connected, but {host} was not found. Hostnames on the account: {hosts}.',
       propertyNone: 'none',
       propertyUnread: 'Google Search is connected, but {host} was not found. Hostnames on the account: {hosts}.',

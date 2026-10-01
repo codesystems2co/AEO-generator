@@ -326,24 +326,35 @@ def _host_key(value: str) -> str:
     return host
 
 
-def property_matches_site(site_url: str, properties: List[Dict[str, Any]]) -> bool:
-    """True only when this hostname is one of the Search Console properties."""
+def property_match_kind(site_url: str, properties: List[Dict[str, Any]]) -> str:
+    """exact, host_only (same hostname, property has no non-default port), or none."""
     wanted = _host_key(site_url)
     if not wanted:
-        return False
+        return "none"
     wanted_host = wanted.split(":", 1)[0]
+    wants_port = ":" in wanted
+    saw_host = False
     for entry in properties or []:
         raw = str((entry or {}).get("siteUrl") or "")
         key = _host_key(raw)
         if not key:
             continue
-        if key == wanted or key == wanted_host:
-            return True
-        if raw.strip().lower().startswith("sc-domain:") and (
-            wanted_host == key or wanted_host.endswith("." + key)
-        ):
-            return True
-    return False
+        if key == wanted:
+            return "exact"
+        domain = raw.strip().lower().startswith("sc-domain:")
+        host_hit = key == wanted_host or (
+            domain and (wanted_host == key or wanted_host.endswith("." + key))
+        )
+        if host_hit and not wants_port:
+            return "exact"
+        if host_hit:
+            saw_host = True
+    return "host_only" if saw_host else "none"
+
+
+def property_matches_site(site_url: str, properties: List[Dict[str, Any]]) -> bool:
+    """True when the hostname, including a non-default port, is a Search Console property."""
+    return property_match_kind(site_url, properties) == "exact"
 
 
 def text_is_placeholder(value: str) -> bool:
@@ -467,9 +478,20 @@ async def readiness(site_url: str, mode: Optional[str] = None) -> Dict[str, Any]
             listed = await gsc_sites()
             sites = listed.get("sites") or []
             hosts = [str(row.get("siteUrl") or "").strip() for row in sites if str(row.get("siteUrl") or "").strip()]
-            matched = property_matches_site(site_url, sites)
+            kind = property_match_kind(site_url, sites)
             listed_hosts = "||".join(hosts)
-            if matched:
+            if kind == "host_only":
+                bare = host.split(":", 1)[0]
+                checks.append(
+                    _check(
+                        "GSC property visible",
+                        False,
+                        f"GSC_PROPERTY_PORT|{host}|{bare}|{listed_hosts}",
+                        detail=listed_hosts,
+                        action_url=GSC_ADD_PROPERTY_URL,
+                    )
+                )
+            elif kind == "exact":
                 checks.append(
                     _check(
                         "GSC property visible",

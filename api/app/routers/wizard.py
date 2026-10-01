@@ -235,15 +235,16 @@ async def wizard_report_pdf(
     req: JobReportRequest,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ):
-    from app.services.i18n_copy import locale_of
+    from datetime import datetime
 
     dossier = await _dossier_from_request(req, x_aeo_license)
     pdf = render_job_pdf(dossier)
-    loc = locale_of(dossier.get("locale"))
-    order = (dossier.get("sale_order_name") or ("order" if loc == "en" else "pedido")).replace(" ", "")
-    host = (dossier.get("host") or ("site" if loc == "en" else "sitio")).replace(" ", "")
-    prefix = "report" if loc == "en" else "informe"
-    filename = f"{prefix}-optimizator-{order}-{host}.pdf"
+
+    raw_host = (dossier.get("host") or dossier.get("site_url") or "sitio").strip().lower()
+    host = raw_host.split("/")[0].split(":")[0] or "sitio"
+    host = "".join(ch if ch.isalnum() or ch in ".-" else "-" for ch in host).strip(".-") or "sitio"
+    stamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    filename = f"{host}_{stamp}.pdf"
     return Response(
         content=pdf,
         media_type="application/pdf",
