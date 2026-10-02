@@ -13,21 +13,136 @@ import './App.css'
 const CATALOG_PRODUCT_URL =
   'https://arkiphere.cloud/shop/product-catalog-aeo-and-seo-pack-with-ia-110'
 
+const PLATFORM_PILLS = ['Odoo', 'PrestaShop', 'WooCommerce']
+
 const PROMO = {
   es: {
-    title: 'Pack de catálogo AEO y SEO',
-    body:
-      'Analiza e inyecta el catálogo completo de la tienda conectada. Precio nativo: 1 unidad de moneda por cada ficha de producto o servicio.',
+    badge: 'AEO · PACK DE CATÁLOGO',
+    title: 'Análisis e inyección de todo el catálogo',
+    subtitle: '1 por ficha de producto. La cantidad es el número de fichas.',
+    tiles: [
+      {
+        key: 'catalog',
+        label: 'Catálogo completo',
+        text: 'Recorre productos y servicios de la tienda conectada.',
+      },
+      {
+        key: 'aeo',
+        label: 'Pack AEO',
+        text: 'FAQ y bloques listos en cada ficha.',
+      },
+      {
+        key: 'seo',
+        label: 'Pack SEO',
+        text: 'Títulos, metadatos y señales por producto.',
+      },
+      {
+        key: 'inject',
+        label: 'Inyección',
+        text: 'Escribe el contenido en cada registro del catálogo.',
+      },
+    ],
+    footer: 'Cantidad = fichas del catálogo. Precio unitario × cantidad.',
     cta: 'Ver ficha del producto',
     close: 'Cerrar',
   },
   en: {
-    title: 'Catalog AEO and SEO pack',
-    body:
-      'Analyze and inject the whole connected shop catalog. Native price: 1 currency unit per product or service record.',
+    badge: 'AEO · CATALOG PACK',
+    title: 'Analysis and injection of the whole catalog',
+    subtitle: '1 per product record. Quantity is the number of records.',
+    tiles: [
+      {
+        key: 'catalog',
+        label: 'Full catalog',
+        text: 'Walks the products and services of the connected store.',
+      },
+      {
+        key: 'aeo',
+        label: 'AEO pack',
+        text: 'FAQ and ready blocks on every record.',
+      },
+      {
+        key: 'seo',
+        label: 'SEO pack',
+        text: 'Titles, metadata and signals per product.',
+      },
+      {
+        key: 'inject',
+        label: 'Injection',
+        text: 'Writes the content into each catalog record.',
+      },
+    ],
+    footer: 'Quantity = catalog records. Unit price × quantity.',
     cta: 'View product page',
     close: 'Close',
   },
+}
+
+function GiftIcon() {
+  return (
+    <svg
+      className="catalog-promo-gift"
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        fill="currentColor"
+        d="M20 7h-2.18A3 3 0 0 0 13 4a3 3 0 0 0-4.82 3H6a2 2 0 0 0-2 2v2h16V9a2 2 0 0 0-2-2ZM12 4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm-3 2a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm-5 6v7a2 2 0 0 0 2 2h4v-9H4Zm10 9h4a2 2 0 0 0 2-2v-7h-6v9Z"
+      />
+    </svg>
+  )
+}
+
+function TileIcon({ name }) {
+  const common = {
+    className: 'catalog-promo-tile-icon',
+    viewBox: '0 0 24 24',
+    width: '18',
+    height: '18',
+    'aria-hidden': 'true',
+    focusable: 'false',
+  }
+  if (name === 'catalog') {
+    return (
+      <svg {...common}>
+        <path
+          fill="currentColor"
+          d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"
+        />
+      </svg>
+    )
+  }
+  if (name === 'aeo') {
+    return (
+      <svg {...common}>
+        <path
+          fill="currentColor"
+          d="M4 4h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm2 4h8v2H6V8Zm0 4h5v2H6v-2Z"
+        />
+      </svg>
+    )
+  }
+  if (name === 'seo') {
+    return (
+      <svg {...common}>
+        <path
+          fill="currentColor"
+          d="M4 19h16v2H4v-2Zm2-3 4-5 3 3 5-7 1.5 1.2-6.5 9-3-3-2.5 3.1L6 16Z"
+        />
+      </svg>
+    )
+  }
+  return (
+    <svg {...common}>
+      <path
+        fill="currentColor"
+        d="M12 2C7.58 2 4 3.79 4 6v12c0 2.21 3.58 4 8 4s8-1.79 8-4V6c0-2.21-3.58-4-8-4Zm0 2c3.31 0 6 1.12 6 2.5S15.31 9 12 9 6 7.88 6 6.5 8.69 4 12 4Zm0 16c-3.31 0-6-1.12-6-2.5V15c1.4 1.15 3.6 1.85 6 1.85s4.6-.7 6-1.85v2.5c0 1.38-2.69 2.5-6 2.5Zm0-5.15c-3.31 0-6-1.12-6-2.5V9.85C7.4 11 9.6 11.7 12 11.7s4.6-.7 6-1.85V12.35c0 1.38-2.69 2.5-6 2.5Z"
+      />
+    </svg>
+  )
 }
 
 function initialLang() {
@@ -83,10 +198,35 @@ function CatalogPromoDialog({ lang, onClose }) {
       aria-labelledby="catalog-promo-title"
     >
       <div className="catalog-promo-card">
-        <h2 id="catalog-promo-title" className="catalog-promo-title">
-          {copy.title}
-        </h2>
-        <p className="catalog-promo-body">{copy.body}</p>
+        <div className="catalog-promo-banner">
+          <span className="catalog-promo-badge">
+            <GiftIcon />
+            {copy.badge}
+          </span>
+          <h2 id="catalog-promo-title" className="catalog-promo-banner-title">
+            {copy.title}
+          </h2>
+          <p className="catalog-promo-banner-subtitle">{copy.subtitle}</p>
+          <div className="catalog-promo-tiles">
+            {copy.tiles.map((tile) => (
+              <div key={tile.key} className="catalog-promo-tile">
+                <TileIcon name={tile.key} />
+                <div className="catalog-promo-tile-copy">
+                  <strong>{tile.label}</strong>
+                  <span>{tile.text}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="catalog-promo-pills">
+            {PLATFORM_PILLS.map((name) => (
+              <span key={name} className="catalog-promo-pill">
+                {name}
+              </span>
+            ))}
+          </div>
+          <p className="catalog-promo-footer">{copy.footer}</p>
+        </div>
         <div className="catalog-promo-actions">
           <a
             className="btn"
