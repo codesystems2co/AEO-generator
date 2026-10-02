@@ -1,6 +1,6 @@
 /** Session-scoped once-per-visit promo for the catalog pack (general platform only). */
 
-export const CATALOG_PROMO_DISMISSED_KEY = 'aeo_catalog_promo_dismissed'
+export const CATALOG_PROMO_DISMISSED_KEY = 'aeo_catalog_promo_dismissed_v2'
 
 /**
  * @param {{ getItem?: (key: string) => string | null }} storage
