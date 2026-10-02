@@ -1041,9 +1041,6 @@ export default function Wizard({ lang: langProp }) {
             </span>
           ) : null}
         </div>
-        <p style={{ marginTop: 0 }}>
-          <a href={`/?${new URLSearchParams({ ...(licenseKey ? { license: licenseKey } : {}), ...(commerceSite ? { site: commerceSite } : {}), assistant: 'catalog' }).toString()}`}>{t.catalog.open}</a>
-        </p>
         <JobProgress
           progress={progress}
           message={progressMessage}

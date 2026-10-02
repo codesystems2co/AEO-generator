@@ -75,9 +75,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
+  border: 1px solid rgba(21, 128, 61, 0.55);
+  background: linear-gradient(
+    135deg,
+    rgba(21, 128, 61, 0.96) 0%,
+    rgba(34, 197, 94, 0.94) 55%,
+    rgba(74, 222, 128, 0.92) 100%
+  );
+  color: #fff;
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -88,8 +93,15 @@
 }
 
 .catalog-nav-link:hover {
-  background: var(--bg);
-  border-color: var(--text);
+  background: linear-gradient(
+    135deg,
+    rgba(21, 128, 61, 0.96) 0%,
+    rgba(34, 197, 94, 0.94) 55%,
+    rgba(74, 222, 128, 0.92) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #fff;
+  filter: brightness(1.06);
 }
 
 .lang-switch {

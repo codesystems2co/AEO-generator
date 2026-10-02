@@ -28,7 +28,7 @@ function catalogAssistantHref() {
   }
 }
 
-export default function Layout({ brand, lang, onLang, children }) {
+export default function Layout({ brand, lang, onLang, onCatalogHover, children }) {
   const ui = UI[lang === 'en' ? 'en' : 'es']
 
   return (
@@ -44,6 +44,7 @@ export default function Layout({ brand, lang, onLang, children }) {
               className="catalog-nav-link"
               href={catalogAssistantHref()}
               aria-label={ui.catalogAria}
+              onMouseEnter={() => onCatalogHover?.()}
             >
               {ui.catalog}
             </a>

@@ -284,12 +284,21 @@ export default function App() {
     setPromoOpen(false)
   }
 
+  function openPromoFromHover() {
+    setPromoOpen((open) => (open ? open : true))
+  }
+
   return (
-    <Layout brand={t.brand} lang={lang} onLang={(next) => setLang(localeOf(next))}>
+    <Layout
+      brand={t.brand}
+      lang={lang}
+      onLang={(next) => setLang(localeOf(next))}
+      onCatalogHover={openPromoFromHover}
+    >
       <ErrorBoundary>
         {isCatalogAssistant ? <CatalogWizard lang={lang} /> : <Wizard lang={lang} />}
       </ErrorBoundary>
-      {!isCatalogAssistant && promoOpen ? (
+      {promoOpen ? (
         <CatalogPromoDialog lang={lang} onClose={closePromo} />
       ) : null}
     </Layout>
