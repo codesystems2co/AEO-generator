@@ -113,7 +113,10 @@ export default function App() {
   const [promoOpen, setPromoOpen] = useState(() => {
     if (isCatalogAssistant) return false
     try {
-      return shouldShowCatalogPromo(window.sessionStorage)
+      const show = shouldShowCatalogPromo(window.sessionStorage)
+      // Record on show so a reload in the same visit does not open it again.
+      if (show) dismissCatalogPromo(window.sessionStorage)
+      return show
     } catch {
       return true
     }

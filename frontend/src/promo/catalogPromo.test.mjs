@@ -30,6 +30,13 @@ describe('catalogPromo', () => {
     assert.equal(shouldShowCatalogPromo(storage), false)
   })
 
+  it('does not show again after record-on-show (reload rule)', () => {
+    const storage = memoryStorage()
+    assert.equal(shouldShowCatalogPromo(storage), true)
+    dismissCatalogPromo(storage)
+    assert.equal(shouldShowCatalogPromo(storage), false)
+  })
+
   it('shows again with a fresh storage', () => {
     const first = memoryStorage()
     dismissCatalogPromo(first)
