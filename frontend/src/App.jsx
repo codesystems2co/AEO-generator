@@ -10,9 +10,6 @@ import {
 } from './promo/catalogPromo'
 import './App.css'
 
-const CATALOG_PRODUCT_URL =
-  'https://arkiphere.cloud/shop/product-catalog-aeo-and-seo-pack-with-ia-110'
-
 const PLATFORM_PILLS = ['Odoo', 'PrestaShop', 'WooCommerce']
 
 const PROMO = {
@@ -179,6 +176,20 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+function catalogAssistantHref() {
+  try {
+    const { license, site } = readOrderQuery()
+    const params = new URLSearchParams()
+    if (license) params.set('license', license)
+    if (site) params.set('site', site)
+    params.set('assistant', 'catalog')
+    const qs = params.toString()
+    return `${window.location.pathname}?${qs}${window.location.hash || ''}`
+  } catch {
+    return `${window.location.pathname}?assistant=catalog`
+  }
+}
+
 function CatalogPromoDialog({ lang, onClose }) {
   const copy = PROMO[lang === 'en' ? 'en' : 'es']
 
@@ -228,12 +239,7 @@ function CatalogPromoDialog({ lang, onClose }) {
           <p className="catalog-promo-footer">{copy.footer}</p>
         </div>
         <div className="catalog-promo-actions">
-          <a
-            className="btn"
-            href={CATALOG_PRODUCT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a className="btn" href={catalogAssistantHref()}>
             {copy.cta}
           </a>
           <button type="button" className="btn btn-secondary" onClick={onClose}>
