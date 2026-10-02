@@ -28,8 +28,18 @@ function catalogAssistantHref() {
   }
 }
 
+/** True only when the URL search has assistant=catalog (ignore sessionStorage). */
+function isCatalogAssistantUrl() {
+  try {
+    return new URLSearchParams(window.location.search).get('assistant') === 'catalog'
+  } catch {
+    return false
+  }
+}
+
 export default function Layout({ brand, lang, onLang, onCatalogHover, children }) {
   const ui = UI[lang === 'en' ? 'en' : 'es']
+  const showCatalogNav = !isCatalogAssistantUrl()
 
   return (
     <div className="layout">
@@ -40,14 +50,16 @@ export default function Layout({ brand, lang, onLang, onCatalogHover, children }
             <span className="logo-text">{brand}</span>
           </div>
           <div className="header-actions" role="group" aria-label="Language">
-            <a
-              className="catalog-nav-link"
-              href={catalogAssistantHref()}
-              aria-label={ui.catalogAria}
-              onMouseEnter={() => onCatalogHover?.()}
-            >
-              {ui.catalog}
-            </a>
+            {showCatalogNav ? (
+              <a
+                className="catalog-nav-link"
+                href={catalogAssistantHref()}
+                aria-label={ui.catalogAria}
+                onMouseEnter={() => onCatalogHover?.()}
+              >
+                {ui.catalog}
+              </a>
+            ) : null}
             <div className="lang-switch" role="group" aria-label="Language">
               <button
                 type="button"
