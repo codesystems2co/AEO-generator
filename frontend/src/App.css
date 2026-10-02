@@ -748,6 +748,47 @@ a.btn-secondary {
   box-shadow: 0 16px 40px rgba(16, 32, 51, 0.18);
 }
 
+.catalog-promo-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(16, 32, 51, 0.45);
+  padding: 1rem;
+}
+
+.catalog-promo-card {
+  width: min(440px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 16px 40px rgba(16, 32, 51, 0.18);
+}
+
+.catalog-promo-title {
+  margin: 0 0 0.55rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.catalog-promo-body {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.catalog-promo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .catalog-block-caption {
   margin: 0 0 0.75rem;
   color: var(--text-muted);

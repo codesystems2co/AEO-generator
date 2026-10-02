@@ -4,7 +4,31 @@ import Wizard from './tabs/Wizard'
 import CatalogWizard from './tabs/CatalogWizard'
 import { copyFor, localeOf } from './i18n/copy'
 import { readOrderQuery } from './wizard/orderContext'
+import {
+  dismissCatalogPromo,
+  shouldShowCatalogPromo,
+} from './promo/catalogPromo'
 import './App.css'
+
+const CATALOG_PRODUCT_URL =
+  'https://arkiphere.cloud/shop/product-catalog-aeo-and-seo-pack-with-ia-110'
+
+const PROMO = {
+  es: {
+    title: 'Pack de catálogo AEO y SEO',
+    body:
+      'Analiza e inyecta el catálogo completo de la tienda conectada. Precio nativo: 1 unidad de moneda por cada ficha de producto o servicio.',
+    cta: 'Ver ficha del producto',
+    close: 'Cerrar',
+  },
+  en: {
+    title: 'Catalog AEO and SEO pack',
+    body:
+      'Analyze and inject the whole connected shop catalog. Native price: 1 currency unit per product or service record.',
+    cta: 'View product page',
+    close: 'Close',
+  },
+}
 
 function initialLang() {
   try {
@@ -40,22 +64,83 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+function CatalogPromoDialog({ lang, onClose }) {
+  const copy = PROMO[lang === 'en' ? 'en' : 'es']
+
+  useEffect(() => {
+    function onKey(event) {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      className="catalog-promo-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="catalog-promo-title"
+    >
+      <div className="catalog-promo-card">
+        <h2 id="catalog-promo-title" className="catalog-promo-title">
+          {copy.title}
+        </h2>
+        <p className="catalog-promo-body">{copy.body}</p>
+        <div className="catalog-promo-actions">
+          <a
+            className="btn"
+            href={CATALOG_PRODUCT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {copy.cta}
+          </a>
+          <button type="button" className="btn btn-secondary" onClick={onClose}>
+            {copy.close}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const [lang, setLang] = useState(initialLang)
   const t = copyFor(lang)
+  const assistant = readOrderQuery().assistant
+  const isCatalogAssistant = assistant === 'catalog'
+  const [promoOpen, setPromoOpen] = useState(() => {
+    if (isCatalogAssistant) return false
+    try {
+      return shouldShowCatalogPromo(window.sessionStorage)
+    } catch {
+      return true
+    }
+  })
 
   useEffect(() => {
     document.title = t.brand
     document.documentElement.lang = lang
   }, [lang, t.brand])
 
-  const assistant = readOrderQuery().assistant
+  function closePromo() {
+    try {
+      dismissCatalogPromo(window.sessionStorage)
+    } catch {
+      /* ignore */
+    }
+    setPromoOpen(false)
+  }
 
   return (
     <Layout brand={t.brand} lang={lang} onLang={(next) => setLang(localeOf(next))}>
       <ErrorBoundary>
-        {assistant === 'catalog' ? <CatalogWizard lang={lang} /> : <Wizard lang={lang} />}
+        {isCatalogAssistant ? <CatalogWizard lang={lang} /> : <Wizard lang={lang} />}
       </ErrorBoundary>
+      {!isCatalogAssistant && promoOpen ? (
+        <CatalogPromoDialog lang={lang} onClose={closePromo} />
+      ) : null}
     </Layout>
   )
 }
