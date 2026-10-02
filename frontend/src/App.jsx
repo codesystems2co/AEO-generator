@@ -113,14 +113,22 @@ export default function App() {
   const [promoOpen, setPromoOpen] = useState(() => {
     if (isCatalogAssistant) return false
     try {
-      const show = shouldShowCatalogPromo(window.sessionStorage)
-      // Record on show so a reload in the same visit does not open it again.
-      if (show) dismissCatalogPromo(window.sessionStorage)
-      return show
+      return shouldShowCatalogPromo(window.sessionStorage)
     } catch {
       return true
     }
   })
+
+  // Record after open so StrictMode's double initializer cannot hide the dialog,
+  // while a later reload in the same visit still stays dismissed.
+  useEffect(() => {
+    if (!promoOpen) return
+    try {
+      dismissCatalogPromo(window.sessionStorage)
+    } catch {
+      /* ignore */
+    }
+  }, [promoOpen])
 
   useEffect(() => {
     document.title = t.brand
