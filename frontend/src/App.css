@@ -930,11 +930,12 @@ a.btn-secondary {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.18rem 0.5rem 0.18rem 0.35rem;
+  padding: 0.18rem 0.5rem;
   border-radius: 999px;
   font-size: 0.68rem;
   font-weight: 600;
-  line-height: 1.2;
+  color: #14532d;
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .catalog-promo-pill-logo {
@@ -943,21 +944,6 @@ a.btn-secondary {
   flex-shrink: 0;
   object-fit: contain;
   border-radius: 3px;
-}
-
-.catalog-promo-pill--odoo {
-  background: #714B67;
-  color: #fff;
-}
-
-.catalog-promo-pill--prestashop {
-  background: #A4DBE8;
-  color: #000;
-}
-
-.catalog-promo-pill--woocommerce {
-  background: #873EFF;
-  color: #fff;
 }
 
 .catalog-promo-footer {

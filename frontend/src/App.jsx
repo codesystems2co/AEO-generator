@@ -247,10 +247,7 @@ function CatalogPromoDialog({ lang, onClose }) {
           </div>
           <div className="catalog-promo-pills">
             {PLATFORM_PILLS.map((pill) => (
-              <span
-                key={pill.key}
-                className={`catalog-promo-pill catalog-promo-pill--${pill.key}`}
-              >
+              <span key={pill.key} className="catalog-promo-pill">
                 <img
                   className="catalog-promo-pill-logo"
                   src={pill.logo}
