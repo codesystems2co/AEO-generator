@@ -14,7 +14,7 @@ const PLATFORM_PILLS = [
   {
     key: 'odoo',
     label: 'Odoo',
-    logo: '/brand/odoo-favicon.ico',
+    logo: '/brand/odoo-mark.svg',
   },
   {
     key: 'prestashop',
