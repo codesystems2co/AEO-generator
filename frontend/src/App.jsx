@@ -10,7 +10,23 @@ import {
 } from './promo/catalogPromo'
 import './App.css'
 
-const PLATFORM_PILLS = ['Odoo', 'PrestaShop', 'WooCommerce']
+const PLATFORM_PILLS = [
+  {
+    key: 'odoo',
+    label: 'Odoo',
+    logo: '/brand/odoo-favicon.ico',
+  },
+  {
+    key: 'prestashop',
+    label: 'PrestaShop',
+    logo: '/brand/prestashop-favicon.svg',
+  },
+  {
+    key: 'woocommerce',
+    label: 'WooCommerce',
+    logo: '/brand/woocommerce-logo.png',
+  },
+]
 
 const PROMO = {
   es: {
@@ -230,9 +246,20 @@ function CatalogPromoDialog({ lang, onClose }) {
             ))}
           </div>
           <div className="catalog-promo-pills">
-            {PLATFORM_PILLS.map((name) => (
-              <span key={name} className="catalog-promo-pill">
-                {name}
+            {PLATFORM_PILLS.map((pill) => (
+              <span
+                key={pill.key}
+                className={`catalog-promo-pill catalog-promo-pill--${pill.key}`}
+              >
+                <img
+                  className="catalog-promo-pill-logo"
+                  src={pill.logo}
+                  alt=""
+                  width="18"
+                  height="18"
+                  aria-hidden="true"
+                />
+                {pill.label}
               </span>
             ))}
           </div>
