@@ -10,9 +10,9 @@ from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
 from fastapi.responses import Response
 
-from app.services import connection_store
+from app.services import catalog_metering, connection_store
 from app.services.catalog_offer import catalog_offer
-from app.services.catalog_product import catalog_product_url
+from app.services.catalog_product import PRODUCT_URL, catalog_product_url
 from app.services.catalog_report import render_catalog_pdf
 from app.services.catalog_apply import native_values
 from app.services.catalog_pack import build_pack, with_model
@@ -39,11 +39,22 @@ from app.services.sitemap_persist import IndexRecord, SitemapShop
 
 router = APIRouter()
 
+_CONFIRMED = ("sale", "done")
+_LINE_FIELDS_FULL = [
+    "name",
+    "product_id",
+    "product_uom_qty",
+    "product_template_id",
+    "aeo_site_url",
+]
+_LINE_FIELDS_MIN = ["name", "product_id", "product_uom_qty", "product_template_id"]
 
-def _lines(sale_order_name: Optional[str]) -> List[str]:
+
+def _order_line_rows(sale_order_name: Optional[str]) -> tuple[List[Dict[str, Any]], Optional[str]]:
+    """Return (rows, error). error set when Odoo could not be read (not when order has no lines)."""
     name = (sale_order_name or "").strip()
     if not name:
-        return []
+        return [], None
     try:
         from app.services.entitlement_service import _odoo_execute
 
@@ -51,25 +62,60 @@ def _lines(sale_order_name: Optional[str]) -> List[str]:
             "sale.order",
             "search_read",
             [("name", "=", name)],
-            fields=["id"],
+            fields=["id", "state"],
             limit=1,
-        ) or []
+        )
+        if found is None:
+            return [], "odoo_unavailable"
+        found = found or []
         if not found:
-            return []
-        rows = _odoo_execute(
-            "sale.order.line",
-            "search_read",
-            [("order_id", "=", found[0]["id"])],
-            fields=["name", "product_id"],
-        ) or []
-    except Exception:
-        return []
+            return [], None
+        state = str(found[0].get("state") or "")
+        if state and state not in _CONFIRMED:
+            return [], None
+        try:
+            rows = _odoo_execute(
+                "sale.order.line",
+                "search_read",
+                [("order_id", "=", found[0]["id"])],
+                fields=_LINE_FIELDS_FULL,
+            )
+        except Exception:
+            rows = _odoo_execute(
+                "sale.order.line",
+                "search_read",
+                [("order_id", "=", found[0]["id"])],
+                fields=_LINE_FIELDS_MIN,
+            )
+        if rows is None:
+            return [], "odoo_unavailable"
+        return [dict(row) for row in (rows or []) if isinstance(row, dict)], None
+    except Exception as exc:
+        return [], str(exc)[:200] or "odoo_unavailable"
+
+
+def _line_names(rows: List[Dict[str, Any]]) -> List[str]:
     lines: List[str] = []
     for row in rows:
         product = row.get("product_id")
         product_name = product[1] if isinstance(product, (list, tuple)) and len(product) > 1 else ""
         lines.append(" ".join(part for part in (row.get("name"), product_name) if part))
     return lines
+
+
+def _metering_for(
+    lic: Optional[str],
+    host: Optional[str],
+    rows: List[Dict[str, Any]],
+    *,
+    source_error: Optional[str] = None,
+) -> Dict[str, Any]:
+    allowance = catalog_metering.allowance_from_rows(rows, host)
+    snap = catalog_metering.metering_snapshot(lic or "", host, allowance)
+    out = {**snap, "acquire_url": catalog_product_url(False) or PRODUCT_URL}
+    if source_error:
+        out["metering_error"] = source_error
+    return out
 
 
 def _context(
@@ -91,10 +137,13 @@ def _context(
                 platforms.append(name)
         if not host:
             host = (pack.get("connection") or {}).get("url")
-    offer = catalog_offer(_lines(order), host, platforms)
+    rows, lines_error = _order_line_rows(order)
+    offer = catalog_offer(_line_names(rows), host, platforms)
     # Any valid active license for the site unlocks catalog (no second purchase).
     if consumed.get("allowed") is True and not offer.get("owned"):
         offer = {**offer, "owned": True}
+    metering = _metering_for(lic, host, rows, source_error=lines_error)
+    offer = {**offer, **metering}
     return {
         "license": lic,
         "consumed": consumed,
@@ -102,6 +151,8 @@ def _context(
         "order": order,
         "host": host,
         "platforms": platforms,
+        "allowance": metering["allowance"],
+        "metering_error": lines_error,
     }
 
 
@@ -156,7 +207,7 @@ async def catalog_offer_status(
         "ok": True,
         "sale_order_name": ctx["order"],
         "general_allowed": ctx["consumed"].get("allowed") is True,
-        "acquire_url": catalog_product_url(offer["owned"]),
+        "acquire_url": offer.get("acquire_url") or PRODUCT_URL,
         **offer,
     }
 
@@ -343,10 +394,30 @@ async def catalog_publish(
         return {"ok": False, "reason": "optional", "written": []}
     if not state:
         raise HTTPException(status_code=409, detail="Analice el catálogo antes de publicar.")
+    if ctx.get("metering_error"):
+        raise HTTPException(
+            status_code=503,
+            detail="No se pudo leer el cupo de fichas del pedido. Inténtelo de nuevo.",
+        )
     sitemap_shop = _sitemap_from_session(state, ctx["host"])
-    result = publish_fixture(ctx["license"], sitemap_shop)
-    connection_store.record_apply(ctx["license"], {"ok": result.get("ok"), "platform": state.get("platform"), "message": "catalog fixture"})
-    return result
+    result = publish_fixture(
+        ctx["license"],
+        sitemap_shop,
+        host=ctx["host"],
+        allowance=int(ctx.get("allowance") or 0),
+    )
+    rows, _err = _order_line_rows(ctx["order"])
+    metering = _metering_for(ctx["license"], ctx["host"], rows, source_error=_err)
+    connection_store.record_apply(
+        ctx["license"],
+        {
+            "ok": result.get("ok"),
+            "platform": state.get("platform"),
+            "message": "catalog fixture",
+            "reason": result.get("reason"),
+        },
+    )
+    return {**result, **metering}
 
 
 @router.post("/report.pdf")

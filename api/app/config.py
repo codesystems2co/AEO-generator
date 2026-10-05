@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     ARKIPHERE_CONSUME_URL: str = "https://arkiphere.cloud"
     CONNECTION_STORE: str = "/app/data/connections.json"
     CONNECTION_FERNET_KEY: Optional[str] = None
+    CATALOG_METERING_STORE: str = "/app/data/catalog_metering.json"
 
     @property
     def cors_list(self) -> List[str]:

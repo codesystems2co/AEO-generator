@@ -237,7 +237,20 @@ export default function CatalogWizard({ lang: langProp }) {
     try {
       const data = await api.catalog.publish()
       setPublished(data)
+      if (data && (data.allowance != null || data.remaining != null)) {
+        setOffer((prev) => ({ ...(prev || {}), ...data, sale_order_name: prev?.sale_order_name || data.sale_order_name }))
+      }
       if (!data?.ok) {
+        if (data?.reason === 'no_credits') {
+          const processed = data.processed_ids ?? data.used ?? 0
+          const needed = data.blocked_count || 1
+          setError(
+            c.noCredits
+              .replace('{processed}', String(processed))
+              .replace('{needed}', String(needed)),
+          )
+          return null
+        }
         setError(c.noWrite)
         return null
       }
@@ -269,6 +282,15 @@ export default function CatalogWizard({ lang: langProp }) {
   const connected = platforms.length > 0
   const owned = Boolean(offer?.owned || offer?.general_allowed)
   const host = offer?.host || query.site || ''
+  const allowance = Number(offer?.allowance ?? 0)
+  const used = Number(offer?.used ?? offer?.processed_ids ?? 0)
+  const remaining = Number(offer?.remaining ?? Math.max(0, allowance - used))
+  const acquireUrl = offer?.acquire_url || CATALOG_PRODUCT_PAGE_URL
+  const fichaBadge = c.fichaBadge
+    .replace('{remaining}', String(remaining))
+    .replace('{used}', String(used))
+    .replace('{allowance}', String(allowance))
+  const creditsBlocked = remaining <= 0
   const selected = PLATFORMS.find((row) => row.id === platform) || PLATFORMS[0]
   const windowRows = session?.queue?.window || []
   const catalogTree = session?.tree || []
@@ -309,7 +331,6 @@ export default function CatalogWizard({ lang: langProp }) {
   }
 
   if (!started) {
-    const acquireUrl = offer?.acquire_url || CATALOG_PRODUCT_PAGE_URL
     return (
       <div className="card">
         <p className="accordion-kicker">{c.kicker}</p>
@@ -320,6 +341,9 @@ export default function CatalogWizard({ lang: langProp }) {
             {owned ? t.wizard.withOrder.replace('{name}', offer?.sale_order_name || '') : t.wizard.noOrder}
           </span>
           {host ? <span className="badge badge-muted" style={{ marginLeft: '0.4rem' }}>{hostLabel(host)}</span> : null}
+          <span className={`badge ${creditsBlocked ? 'badge-warn' : 'badge-muted'}`} style={{ marginLeft: '0.4rem' }}>
+            {fichaBadge}
+          </span>
         </p>
         <p>{c.locked}</p>
         <p>{c.gateHint}</p>
@@ -388,7 +412,21 @@ export default function CatalogWizard({ lang: langProp }) {
         <div className="btn-row" style={{ marginBottom: '0.85rem' }}>
           <span className="badge badge-success">{t.wizard.withOrder.replace('{name}', offer?.sale_order_name || '')}</span>
           <span className="badge badge-muted">{hostLabel(host)}</span>
+          <span className={`badge ${creditsBlocked ? 'badge-warn' : 'badge-muted'}`}>{fichaBadge}</span>
         </div>
+        {creditsBlocked ? (
+          <div style={{ marginBottom: '0.85rem' }}>
+            <p className="error-msg" style={{ marginBottom: '0.5rem' }}>
+              {c.noCredits
+                .replace('{processed}', String(used))
+                .replace('{needed}', String(Math.max(1, (session?.total || 0) - used)))}
+            </p>
+            <a className="btn gate-acquire" href={acquireUrl}>
+              <IconCart />
+              {c.acquireMore}
+            </a>
+          </div>
+        ) : null}
         <p style={{ marginTop: 0 }}>
           <a href={generalHref(query.license, host)}>{c.back}</a>
         </p>

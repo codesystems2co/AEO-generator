@@ -160,7 +160,13 @@ def remember_pack(license_key: str, product_id: Any, pack: Dict[str, Any], sourc
             item["source"] = source
 
 
-def publish_fixture(license_key: str, sitemap_shop: Any = None) -> Dict[str, Any]:
+def publish_fixture(
+    license_key: str,
+    sitemap_shop: Any = None,
+    *,
+    host: Optional[str] = None,
+    allowance: Optional[int] = None,
+) -> Dict[str, Any]:
     key = _key(license_key)
     state = _SESSIONS.get(key)
     if not state:
@@ -169,6 +175,7 @@ def publish_fixture(license_key: str, sitemap_shop: Any = None) -> Dict[str, Any
         return {"ok": False, "reason": "optional", "written": []}
     shop = state["shop"]
     written = []
+    blocked = []
     sitemap = None
     batch_ids = {item for item in (state.get("batch_ids") or [])}
     for item in state.get("analyzed") or []:
@@ -177,17 +184,45 @@ def publish_fixture(license_key: str, sitemap_shop: Any = None) -> Dict[str, Any
                 continue
         elif str(item.get("name") or "").strip() != "AEO data":
             continue
-        result = apply_pack(shop, item.get("id"), item.get("pack") or {}, owned=True)
+        result = apply_pack(
+            shop,
+            item.get("id"),
+            item.get("pack") or {},
+            owned=True,
+            license_key=license_key if allowance is not None else None,
+            host=host,
+            allowance=allowance,
+        )
         item["written"] = {field: (item.get("pack") or {}).get("seo", {}).get("title") for field in result.get("written") or []}
         written.append(result)
-        if sitemap_shop is not None:
+        if result.get("reason") == "no_credits":
+            blocked.append(item.get("id"))
+            continue
+        if result.get("ok") and sitemap_shop is not None:
             sitemap = include_published_product(
                 sitemap_shop,
                 {"url": item.get("url"), "is_published": bool(item.get("is_published", True))},
             )
-    delivered = bool(written) and all(row.get("ok") for row in written)
+    ok_rows = [row for row in written if row.get("ok")]
+    delivered = bool(ok_rows) and not blocked and all(row.get("ok") for row in written)
+    if blocked and not ok_rows:
+        state["delivered"] = False
+        return {
+            "ok": False,
+            "reason": "no_credits",
+            "written": written,
+            "blocked": blocked,
+            "blocked_count": len(blocked),
+            "sitemap": sitemap,
+            "delivered": False,
+        }
     state["delivered"] = delivered
-    return {"ok": delivered, "written": written, "sitemap": sitemap, "delivered": delivered}
+    out: Dict[str, Any] = {"ok": delivered, "written": written, "sitemap": sitemap, "delivered": delivered}
+    if blocked:
+        out["blocked"] = blocked
+        out["blocked_count"] = len(blocked)
+        out["reason"] = "no_credits"
+    return out
 
 
 def report_ready(license_key: str) -> bool:

@@ -43,7 +43,7 @@ PRODUCT_WEBSITE_HTML = """
 """
 
 
-def catalog_product_url(owned: bool) -> str | None:
-    if owned:
-        return None
+def catalog_product_url(owned: bool = False) -> str:
+    """Catalog product page — always available so users can buy more fichas."""
+    del owned  # ownership no longer hides the acquire URL
     return PRODUCT_URL

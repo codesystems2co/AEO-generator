@@ -113,6 +113,10 @@ const COPY = {
       progressSeo: 'Metas de cada ítem',
       progressPublish: 'En su catálogo',
       progressReport: 'Árbol por producto o servicio',
+      fichaBadge: 'Fichas nuevas: {remaining} restantes · {used} / {allowance}',
+      noCredits:
+        'Quedan 0 fichas nuevas. Ya procesados: {processed} (puede volver a procesarlos sin coste). Para {needed} productos nuevos, adquiera más fichas.',
+      acquireMore: 'Adquirir más fichas',
     },
     step: {
       connect: 'Conexión',
@@ -427,6 +431,10 @@ const COPY = {
       progressSeo: 'Metas per item',
       progressPublish: 'On your catalog',
       progressReport: 'Tree per product or service',
+      fichaBadge: 'New sheets: {remaining} left · {used} / {allowance}',
+      noCredits:
+        '0 new sheets left. Already processed: {processed} (you can re-process them at no cost). For {needed} new products, acquire more sheets.',
+      acquireMore: 'Acquire more sheets',
     },
     step: {
       connect: 'Connection',
