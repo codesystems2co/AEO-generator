@@ -1,8 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_URL || (
-  typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:8642`
-    : ''
-)
+// Same-origin /api via Vite proxy (or reverse proxy). Never append :8642 —
+// that port is HTTP-only and breaks on https://*.sslip.io (ERR_SSL_PROTOCOL_ERROR).
+const API_BASE = import.meta.env.VITE_API_URL || ''
 
 let licenseKey = ''
 

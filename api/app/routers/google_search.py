@@ -66,7 +66,7 @@ async def oauth_start(
 
 @router.get("/oauth/callback")
 async def oauth_callback(code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
-    frontend = (settings.FRONTEND_PUBLIC_URL or "http://2.28.106.22:9012").rstrip("/")
+    frontend = (settings.FRONTEND_PUBLIC_URL or "https://2-28-106-22.sslip.io").rstrip("/")
     if error:
         return RedirectResponse(f"{frontend}/?{gsc.oauth_return_query('error', oauth_state=state)}&reason={error}")
     result = await gsc.finish_oauth(code or "", state or "")

@@ -92,6 +92,9 @@ def _context(
         if not host:
             host = (pack.get("connection") or {}).get("url")
     offer = catalog_offer(_lines(order), host, platforms)
+    # Any valid active license for the site unlocks catalog (no second purchase).
+    if consumed.get("allowed") is True and not offer.get("owned"):
+        offer = {**offer, "owned": True}
     return {
         "license": lic,
         "consumed": consumed,

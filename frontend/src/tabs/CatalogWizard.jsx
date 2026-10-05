@@ -154,7 +154,8 @@ export default function CatalogWizard({ lang: langProp }) {
         if (cancelled) return
         setOffer(data)
         const platformsNow = data?.platforms || []
-        if (data?.owned || platformsNow.includes('odoo')) {
+        const unlocked = Boolean(data?.owned || data?.general_allowed)
+        if (unlocked || platformsNow.includes('odoo')) {
           setStarted(true)
           setStep(1)
           const first = platformsNow[0]
@@ -266,7 +267,7 @@ export default function CatalogWizard({ lang: langProp }) {
 
   const platforms = offer?.platforms || []
   const connected = platforms.length > 0
-  const owned = Boolean(offer?.owned)
+  const owned = Boolean(offer?.owned || offer?.general_allowed)
   const host = offer?.host || query.site || ''
   const selected = PLATFORMS.find((row) => row.id === platform) || PLATFORMS[0]
   const windowRows = session?.queue?.window || []

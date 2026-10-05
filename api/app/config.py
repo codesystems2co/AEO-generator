@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     PACK_OLLAMA_TIMEOUT_SEC: float = 90.0
     CORE_BASE_URL: str = "http://172.17.0.1:18642"
     CORE_TIMEOUT_SEC: float = 25.0
-    FRONTEND_PUBLIC_URL: str = "http://2.28.106.22:9012"
+    FRONTEND_PUBLIC_URL: str = "https://2-28-106-22.sslip.io"
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: str = "https://arkiphere.cloud/aeo/google/oauth/callback"
@@ -42,7 +42,7 @@ class Settings(BaseSettings):
         if "*" in origins:
             return ["*"]
         extra = [
-            "http://2.28.106.22:9012",
+            "https://2-28-106-22.sslip.io",
             "http://localhost:5173",
             "http://localhost:9012",
             "http://arkiphere.cloud",
