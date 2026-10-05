@@ -69,12 +69,20 @@ def _odoo_execute(model: str, method: str, *args, **kwargs):
     if not password or not user:
         return None
     base = (settings.ODOO_URL or "https://arkiphere.cloud").rstrip("/")
-    common = xmlrpc_client.ServerProxy(f"{base}/xmlrpc/2/common", allow_none=True)
-    uid = common.authenticate(settings.ODOO_DB or "osh", user, password, {})
-    if not uid:
-        raise RuntimeError("Odoo authentication failed")
-    models = xmlrpc_client.ServerProxy(f"{base}/xmlrpc/2/object", allow_none=True)
-    return models.execute_kw(settings.ODOO_DB or "osh", uid, password, model, method, list(args), kwargs or {})
+    # Bound XML-RPC so a slow/unreachable Odoo cannot wedge the API process.
+    import socket
+
+    previous = socket.getdefaulttimeout()
+    socket.setdefaulttimeout(15)
+    try:
+        common = xmlrpc_client.ServerProxy(f"{base}/xmlrpc/2/common", allow_none=True)
+        uid = common.authenticate(settings.ODOO_DB or "osh", user, password, {})
+        if not uid:
+            raise RuntimeError("Odoo authentication failed")
+        models = xmlrpc_client.ServerProxy(f"{base}/xmlrpc/2/object", allow_none=True)
+        return models.execute_kw(settings.ODOO_DB or "osh", uid, password, model, method, list(args), kwargs or {})
+    finally:
+        socket.setdefaulttimeout(previous)
 
 
 def _odoo_find_partner(github_login: str) -> Optional[Dict[str, Any]]:

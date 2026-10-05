@@ -1,6 +1,7 @@
 """Separate catalog assistant. Reuses the host and shop already connected."""
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -201,7 +202,7 @@ async def catalog_offer_status(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = _context(license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
     offer = ctx["offer"]
     return {
         "ok": True,
@@ -238,7 +239,7 @@ async def catalog_session_start(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = _context(license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     batch = bool(body and body.batch)
@@ -269,7 +270,7 @@ async def catalog_session_feed(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = _context(license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     if not body.products:
@@ -298,7 +299,7 @@ async def catalog_compose(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = _context(license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     row = normalize_odoo(body.product, body.origin)
@@ -329,7 +330,7 @@ async def catalog_injected(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = _context(license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     return {"ok": True, "run": mark_injected(ctx["license"])}
@@ -341,7 +342,7 @@ async def catalog_session_tick(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = _context(license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     if not get_session(ctx["license"]):
@@ -363,7 +364,7 @@ async def catalog_job(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = _context(license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
     session = public_session(ctx["license"]) if ctx["license"] else {"ok": True, "tree": [], "queue": {"window": []}}
     general = connection_store.get_job(ctx["license"] or "") or {}
     return {
@@ -386,7 +387,7 @@ async def catalog_publish(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = _context(license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     state = get_session(ctx["license"])
@@ -426,7 +427,7 @@ async def catalog_report_pdf(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ):
-    ctx = _context(license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
     lic = ctx["license"] or ""
     session = get_session(lic) or {}
     if not report_ready(lic):
