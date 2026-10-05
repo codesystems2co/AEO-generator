@@ -244,6 +244,33 @@ class ApplyCreditsTest(_StoreCase):
         self.assertEqual(catalog_metering.used_count("lic-z", "https://shop.example"), 0)
 
 
+
+class NeededQtyTest(_StoreCase):
+    def test_needed_qty_subtracts_processed(self):
+        """54 total, 8 processed, remaining 0 → buy 46 (not 54)."""
+        host = "https://gap-advertisements-tool-highs.trycloudflare.com"
+        for i in range(1, 9):
+            catalog_metering.record_applied("lic-n", host, i)
+        self.assertEqual(catalog_metering.used_count("lic-n", host), 8)
+        self.assertEqual(catalog_metering.remaining("lic-n", host, 0), 0)
+        self.assertEqual(catalog_metering.compute_needed_qty(54, "lic-n", host, 0), 46)
+
+    def test_needed_qty_also_subtracts_remaining_allowance(self):
+        host = "https://shop.example"
+        catalog_metering.record_applied("lic-a", host, 1)
+        # 54 total, 1 processed, allowance 10 → remaining 9 → needed 44
+        self.assertEqual(catalog_metering.compute_needed_qty(54, "lic-a", host, 10), 44)
+
+    def test_snapshot_includes_needed_qty_from_catalog_total(self):
+        host = "https://shop.example"
+        for i in range(3):
+            catalog_metering.record_applied("lic-s", host, i + 1)
+        snap = catalog_metering.metering_snapshot("lic-s", host, 0, catalog_total=54)
+        self.assertEqual(snap["used"], 3)
+        self.assertEqual(snap["needed_qty"], 51)
+        self.assertIn("qty=51", snap["acquire_url"])
+
+
 class AcquireUrlTest(unittest.TestCase):
     def test_acquire_url_stays_when_owned(self):
         self.assertEqual(catalog_product_url(True), PRODUCT_URL)

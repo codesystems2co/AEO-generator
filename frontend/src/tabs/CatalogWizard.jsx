@@ -213,6 +213,9 @@ export default function CatalogWizard({ lang: langProp }) {
           if (cancelled) return
           const running = data?.catalog
           if (data?.run?.total) setRun(data.run)
+          if (data?.offer && (data.offer.used != null || data.offer.needed_qty != null || data.offer.remaining != null)) {
+            setOffer((prev) => ({ ...(prev || {}), ...data.offer, sale_order_name: prev?.sale_order_name || data.offer.sale_order_name }))
+          }
           if (running && (running.analyzed_count || running.queue?.window?.length)) {
             setSession(running)
             setStarted(true)
@@ -323,7 +326,11 @@ export default function CatalogWizard({ lang: langProp }) {
   const used = Number(offer?.used ?? offer?.processed_ids ?? 0)
   const remaining = Number(offer?.remaining ?? Math.max(0, allowance - used))
   const catalogTotal = Number(session?.total ?? run?.total ?? 0)
-  const neededQty = Math.max(0, catalogTotal - used - remaining)
+  // Unmet NEW ids only: (catalog − already processed/applied) − remaining allowance.
+  const computedNeeded = Math.max(0, catalogTotal - used - remaining)
+  const neededQty = offer?.needed_qty != null && Number.isFinite(Number(offer.needed_qty))
+    ? Math.max(0, Number(offer.needed_qty))
+    : computedNeeded
   const acquireUrl = withAcquireParams(
     offer?.acquire_url || CATALOG_PRODUCT_PAGE_URL,
     host,

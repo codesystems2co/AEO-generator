@@ -216,12 +216,31 @@ def record_applied(license_key: str, host: Optional[str], product_id: Any) -> bo
         return True
 
 
+def compute_needed_qty(
+    catalog_total: int,
+    license_key: str,
+    host: Optional[str],
+    allowance: int,
+) -> int:
+    """Fichas to buy = unmet NEW catalog IDs beyond remaining allowance.
+
+    neededQty = max(0, (catalogTotal − processed/applied) − remaining).
+    Re-runs of already-processed IDs are free and must not inflate buy qty.
+    """
+    total = max(0, int(catalog_total or 0))
+    used = used_count(license_key, host)
+    allow = max(0, int(allowance or 0))
+    left = max(0, allow - used)
+    return max(0, total - used - left)
+
+
 def metering_snapshot(
     license_key: str,
     host: Optional[str],
     allowance: int,
     *,
     needed_qty: Optional[int] = None,
+    catalog_total: Optional[int] = None,
 ) -> Dict[str, Any]:
     from app.services.catalog_product import catalog_product_url
 
@@ -229,15 +248,20 @@ def metering_snapshot(
     allow = max(0, int(allowance or 0))
     left = max(0, allow - used)
     qty = needed_qty
+    if qty is None and catalog_total is not None:
+        qty = compute_needed_qty(catalog_total, license_key, host, allow)
     if qty is None:
         qty = left if left > 0 else 1
-    return {
+    out = {
         "allowance": allow,
         "used": used,
         "remaining": left,
         "processed_ids": used,
         "acquire_url": catalog_product_url(False, host=host, quantity=qty) or PRODUCT_URL,
     }
+    if catalog_total is not None or needed_qty is not None:
+        out["needed_qty"] = max(0, int(qty or 0))
+    return out
 
 
 def filter_new_ids(

@@ -177,12 +177,11 @@ def publish_fixture(
     written = []
     blocked = []
     sitemap = None
+    # batch_ids set → only those sheets (demo eight). Empty → full catalog: every
+    # analyzed id (metering gates new writes; already-processed re-runs stay free).
     batch_ids = {item for item in (state.get("batch_ids") or [])}
     for item in state.get("analyzed") or []:
-        if batch_ids:
-            if item.get("id") not in batch_ids:
-                continue
-        elif str(item.get("name") or "").strip() != "AEO data":
+        if batch_ids and item.get("id") not in batch_ids:
             continue
         result = apply_pack(
             shop,

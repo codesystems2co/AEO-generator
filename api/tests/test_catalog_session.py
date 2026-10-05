@@ -73,7 +73,7 @@ class SessionTest(unittest.TestCase):
         self.assertTrue(any(row["id"] == 21 for row in state["queue"]["window"]))
         self.assertIn("bloque 2", state["queue"]["caption"])
 
-    def test_publish_writes_only_aeo_data_when_owned(self):
+    def test_publish_writes_all_analyzed_when_owned(self):
         shop = _MemoryShop(3)
         start_session("lic-c", shop, owned=True, locale="es")
         tick_session("lic-c")
@@ -81,12 +81,16 @@ class SessionTest(unittest.TestCase):
         sitemap = SitemapShop(
             platform="odoo",
             origin="https://shop.example",
-            records=(IndexRecord(path="/shop/p1", kind="product", indexable=False),),
+            records=(
+                IndexRecord(path="/shop/p1", kind="product", indexable=False),
+                IndexRecord(path="/shop/p2", kind="product", indexable=False),
+            ),
             file_xml="<?xml version='1.0'?><urlset></urlset>",
         )
         result = publish_fixture("lic-c", sitemap)
         self.assertTrue(result["ok"])
-        self.assertEqual([item[0] for item in shop.writes], [1])
+        # Full-catalog mode (no batch_ids): every analyzed id is written.
+        self.assertEqual([item[0] for item in shop.writes], [1, 2])
         self.assertTrue(result["sitemap"]["ok"])
 
     def test_batch_publish_writes_only_the_new_sheets(self):

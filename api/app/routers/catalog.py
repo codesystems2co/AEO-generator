@@ -194,6 +194,7 @@ def _metering_for(
     *,
     source_error: Optional[str] = None,
     needed_qty: Optional[int] = None,
+    catalog_total: Optional[int] = None,
 ) -> Dict[str, Any]:
     allowance = catalog_metering.allowance_from_rows(rows, host)
     snap = catalog_metering.metering_snapshot(
@@ -201,13 +202,17 @@ def _metering_for(
         host,
         allowance,
         needed_qty=needed_qty,
+        catalog_total=catalog_total,
     )
+    qty = snap.get("needed_qty")
+    if qty is None:
+        qty = needed_qty if needed_qty is not None else (snap.get("remaining") or 1)
     out = {
         **snap,
         "acquire_url": catalog_product_url(
             False,
             host=host,
-            quantity=needed_qty if needed_qty is not None else (snap.get("remaining") or 1),
+            quantity=qty,
         )
         or PRODUCT_URL,
     }
@@ -476,9 +481,40 @@ async def catalog_job(
     ctx = await asyncio.to_thread(_context_cached, license, key, x_aeo_license)
     session = public_session(ctx["license"]) if ctx["license"] else {"ok": True, "tree": [], "queue": {"window": []}}
     general = connection_store.get_job(ctx["license"] or "") or {}
+    run = run_public(ctx["license"] or "")
+    offer = dict(ctx["offer"] or {})
+    total = int((session or {}).get("total") or 0) or int((run or {}).get("total") or 0)
+    if total > 0:
+        needed = catalog_metering.compute_needed_qty(
+            total,
+            ctx["license"] or "",
+            ctx.get("host") or offer.get("host"),
+            int(offer.get("allowance") or ctx.get("allowance") or 0),
+        )
+        offer = {
+            **offer,
+            "needed_qty": needed,
+            "acquire_url": catalog_product_url(
+                False,
+                host=ctx.get("host") or offer.get("host"),
+                quantity=needed if needed > 0 else max(1, int(offer.get("remaining") or 1)),
+            )
+            or offer.get("acquire_url")
+            or PRODUCT_URL,
+            "used": catalog_metering.used_count(
+                ctx["license"] or "",
+                ctx.get("host") or offer.get("host"),
+            ),
+            "remaining": catalog_metering.remaining(
+                ctx["license"] or "",
+                ctx.get("host") or offer.get("host"),
+                int(offer.get("allowance") or ctx.get("allowance") or 0),
+            ),
+        }
+        offer["processed_ids"] = offer["used"]
     return {
         "ok": True,
-        "offer": ctx["offer"],
+        "offer": offer,
         "general": {
             "tree": general.get("tree") or [],
             "summary": general.get("summary"),
@@ -486,7 +522,7 @@ async def catalog_job(
             "host": general.get("host") or ctx["host"],
         },
         "catalog": session,
-        "run": run_public(ctx["license"] or ""),
+        "run": run,
     }
 
 
