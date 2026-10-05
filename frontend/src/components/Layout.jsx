@@ -4,14 +4,14 @@ const UI = {
   es: {
     catalog: 'Catálogo',
     catalogAria:
-      'Abrir análisis e inyección de catálogo para cada ficha de producto',
+      'Abrir análisis e inyección del catálogo de productos y servicios',
     esLabel: 'Español',
     enLabel: 'English',
   },
   en: {
     catalog: 'Catalog',
     catalogAria:
-      'Open catalog analysis and injection for every product record',
+      'Open catalog analysis and injection for products and services',
     esLabel: 'Español',
     enLabel: 'English',
   },

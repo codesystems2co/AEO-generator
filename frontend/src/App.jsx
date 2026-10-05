@@ -31,8 +31,8 @@ const PLATFORM_PILLS = [
 const PROMO = {
   es: {
     badge: 'AEO · PACK DE CATÁLOGO',
-    title: 'Análisis e inyección de todo el catálogo',
-    subtitle: '1 por ficha de producto. La cantidad es el número de fichas.',
+    title: 'Tu catálogo completo: productos y servicios',
+    subtitle: '1 por producto o servicio. La cantidad es el número de ítems del catálogo.',
     tiles: [
       {
         key: 'catalog',
@@ -42,27 +42,27 @@ const PROMO = {
       {
         key: 'aeo',
         label: 'Pack AEO',
-        text: 'FAQ y bloques listos en cada ficha.',
+        text: 'Añade FAQ y bloques al final de cada descripción.',
       },
       {
         key: 'seo',
         label: 'Pack SEO',
-        text: 'Títulos, metadatos y señales por producto.',
+        text: 'Rellena meta título, descripción y palabras clave.',
       },
       {
         key: 'inject',
         label: 'Inyección',
-        text: 'Escribe el contenido en cada registro del catálogo.',
+        text: 'Escribe en cada producto y servicio del catálogo.',
       },
     ],
-    footer: 'Cantidad = fichas del catálogo. Precio unitario × cantidad.',
-    cta: 'Ver ficha del producto',
+    footer: 'Cantidad = productos y servicios. Precio unitario × cantidad.',
+    cta: 'Analizar mi catálogo',
     close: 'Cerrar',
   },
   en: {
     badge: 'AEO · CATALOG PACK',
-    title: 'Analysis and injection of the whole catalog',
-    subtitle: '1 per product record. Quantity is the number of records.',
+    title: 'Your whole catalog: products and services',
+    subtitle: '1 per product or service. Quantity is the number of catalog items.',
     tiles: [
       {
         key: 'catalog',
@@ -72,21 +72,21 @@ const PROMO = {
       {
         key: 'aeo',
         label: 'AEO pack',
-        text: 'FAQ and ready blocks on every record.',
+        text: 'Appends FAQ and blocks at the end of each description.',
       },
       {
         key: 'seo',
         label: 'SEO pack',
-        text: 'Titles, metadata and signals per product.',
+        text: 'Fills meta title, description and keywords only.',
       },
       {
         key: 'inject',
         label: 'Injection',
-        text: 'Writes the content into each catalog record.',
+        text: 'Writes into each product and service in the catalog.',
       },
     ],
-    footer: 'Quantity = catalog records. Unit price × quantity.',
-    cta: 'View product page',
+    footer: 'Quantity = products and services. Unit price × quantity.',
+    cta: 'Analyze my catalog',
     close: 'Close',
   },
 }

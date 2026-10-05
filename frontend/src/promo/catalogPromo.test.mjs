@@ -19,6 +19,10 @@ function memoryStorage(seed = {}) {
 }
 
 describe('catalogPromo', () => {
+  it('uses dismiss key v4 so updated copy shows again', () => {
+    assert.equal(CATALOG_PROMO_DISMISSED_KEY, 'aeo_catalog_promo_dismissed_v4')
+  })
+
   it('shows on first visit (empty storage)', () => {
     assert.equal(shouldShowCatalogPromo(memoryStorage()), true)
   })
