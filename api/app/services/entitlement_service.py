@@ -63,26 +63,75 @@ def _odoo_password() -> Optional[str]:
     return (settings.ODOO_API_KEY or settings.ODOO_PASSWORD or "").strip() or None
 
 
+class _TimeoutTransport(xmlrpc_client.Transport):
+    """HTTP XML-RPC transport with a per-connection timeout (thread-safe)."""
+
+    def __init__(self, timeout: float = 8.0, use_datetime: bool = False):
+        super().__init__(use_datetime=use_datetime)
+        self._timeout = float(timeout)
+
+    def make_connection(self, host):
+        conn = super().make_connection(host)
+        try:
+            conn.timeout = self._timeout
+        except Exception:
+            pass
+        return conn
+
+
+class _TimeoutSafeTransport(xmlrpc_client.SafeTransport):
+    """HTTPS XML-RPC transport with a per-connection timeout (thread-safe)."""
+
+    def __init__(self, timeout: float = 8.0, use_datetime: bool = False):
+        super().__init__(use_datetime=use_datetime)
+        self._timeout = float(timeout)
+
+    def make_connection(self, host):
+        conn = super().make_connection(host)
+        try:
+            conn.timeout = self._timeout
+        except Exception:
+            pass
+        return conn
+
+
 def _odoo_execute(model: str, method: str, *args, **kwargs):
     password = _odoo_password()
     user = (settings.ODOO_USERNAME or "").strip()
     if not password or not user:
         return None
     base = (settings.ODOO_URL or "https://arkiphere.cloud").rstrip("/")
-    # Bound XML-RPC so a slow/unreachable Odoo cannot wedge the API process.
-    import socket
-
-    previous = socket.getdefaulttimeout()
-    socket.setdefaulttimeout(15)
-    try:
-        common = xmlrpc_client.ServerProxy(f"{base}/xmlrpc/2/common", allow_none=True)
-        uid = common.authenticate(settings.ODOO_DB or "osh", user, password, {})
-        if not uid:
-            raise RuntimeError("Odoo authentication failed")
-        models = xmlrpc_client.ServerProxy(f"{base}/xmlrpc/2/object", allow_none=True)
-        return models.execute_kw(settings.ODOO_DB or "osh", uid, password, model, method, list(args), kwargs or {})
-    finally:
-        socket.setdefaulttimeout(previous)
+    # Per-connection timeout. Never use socket.setdefaulttimeout here: concurrent
+    # catalog /offer + /job polls race and can leave sockets with no timeout,
+    # wedging the API so the FE stays on «Comprobando el pack…» forever.
+    timeout = float(kwargs.pop("_timeout", 8) or 8)
+    transport: xmlrpc_client.Transport
+    if base.lower().startswith("https"):
+        transport = _TimeoutSafeTransport(timeout=timeout)
+    else:
+        transport = _TimeoutTransport(timeout=timeout)
+    common = xmlrpc_client.ServerProxy(
+        f"{base}/xmlrpc/2/common",
+        allow_none=True,
+        transport=transport,
+    )
+    uid = common.authenticate(settings.ODOO_DB or "osh", user, password, {})
+    if not uid:
+        raise RuntimeError("Odoo authentication failed")
+    models = xmlrpc_client.ServerProxy(
+        f"{base}/xmlrpc/2/object",
+        allow_none=True,
+        transport=transport,
+    )
+    return models.execute_kw(
+        settings.ODOO_DB or "osh",
+        uid,
+        password,
+        model,
+        method,
+        list(args),
+        kwargs or {},
+    )
 
 
 def _odoo_find_partner(github_login: str) -> Optional[Dict[str, Any]]:

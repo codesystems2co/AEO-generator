@@ -177,7 +177,8 @@ export default function CatalogWizard({ lang: langProp }) {
   useEffect(() => {
     let cancelled = false
     if (query.license) setLicense(query.license)
-    api.catalog.offer(query.license)
+    // Hard cap so the checking screen cannot hang forever if the API is busy.
+    api.catalog.offer(query.license, { signal: AbortSignal.timeout(20000) })
       .then((data) => {
         if (cancelled) return
         setOffer(data)
@@ -199,9 +200,14 @@ export default function CatalogWizard({ lang: langProp }) {
   }, [query.license])
 
   useEffect(() => {
+    // Wait for offer so /job polls cannot starve the pack check on the API thread pool.
+    if (!offer) return undefined
     if (query.license) setLicense(query.license)
     let cancelled = false
+    let inFlight = false
     const pull = () => {
+      if (cancelled || inFlight) return
+      inFlight = true
       api.catalog.job(query.license)
         .then((data) => {
           if (cancelled) return
@@ -218,14 +224,17 @@ export default function CatalogWizard({ lang: langProp }) {
           }
         })
         .catch(() => {})
+        .finally(() => {
+          inFlight = false
+        })
     }
     pull()
-    const timer = window.setInterval(pull, 2000)
+    const timer = window.setInterval(pull, 2500)
     return () => {
       cancelled = true
       window.clearInterval(timer)
     }
-  }, [query.license])
+  }, [query.license, offer])
 
   useEffect(() => {
     if (step !== 2 || !session || session.done || run?.running || ticking.current) return undefined

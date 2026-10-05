@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
@@ -39,6 +41,40 @@ from app.services.site_guard import extract_license
 from app.services.sitemap_persist import IndexRecord, SitemapShop
 
 router = APIRouter()
+
+# Short-lived context cache so rapid /job polls (every 2s from FE) do not each
+# re-run consume + multi XML-RPC and starve /offer on the thread pool.
+_CONTEXT_CACHE: Dict[str, Dict[str, Any]] = {}
+_CONTEXT_CACHE_LOCK = threading.Lock()
+_CONTEXT_TTL_SEC = 8.0
+
+
+def _context_cached(
+    license: Optional[str],
+    key: Optional[str],
+    header: Optional[str],
+) -> Dict[str, Any]:
+    lic = extract_license(header, license, key) or ""
+    now = time.monotonic()
+    if lic:
+        with _CONTEXT_CACHE_LOCK:
+            hit = _CONTEXT_CACHE.get(lic)
+            if hit and (now - hit.get("at", 0)) < _CONTEXT_TTL_SEC:
+                return hit["ctx"]
+    ctx = _context(license, key, header)
+    if lic:
+        with _CONTEXT_CACHE_LOCK:
+            _CONTEXT_CACHE[lic] = {"at": time.monotonic(), "ctx": ctx}
+    return ctx
+
+
+def _invalidate_context(lic: Optional[str]) -> None:
+    token = (lic or "").strip()
+    if not token:
+        return
+    with _CONTEXT_CACHE_LOCK:
+        _CONTEXT_CACHE.pop(token, None)
+
 
 _CONFIRMED = ("sale", "done")
 _LINE_FIELDS_FULL = [
@@ -266,7 +302,7 @@ async def catalog_offer_status(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context_cached, license, key, x_aeo_license)
     offer = ctx["offer"]
     return {
         "ok": True,
@@ -303,7 +339,7 @@ async def catalog_session_start(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context_cached, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     batch = bool(body and body.batch)
@@ -318,6 +354,7 @@ async def catalog_session_start(
             raise HTTPException(status_code=409, detail="Las ocho fichas nuevas están disponibles en Odoo.")
         batch_ids = shop.ensure_samples()
         shop = SelectedCatalogShop(shop, batch_ids)
+    _invalidate_context(ctx["license"])
     return start_session(
         ctx["license"],
         shop,
@@ -334,7 +371,7 @@ async def catalog_session_feed(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context_cached, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     if not body.products:
@@ -353,6 +390,7 @@ async def catalog_session_feed(
         json.dumps({"origin": body.origin, "total": body.total, "products": body.products[:20]}, ensure_ascii=False),
         encoding="utf-8",
     )
+    _invalidate_context(ctx["license"])
     return start_listed(ctx["license"], rows, locale=ctx["consumed"].get("lang") or "es", total=body.total)
 
 
@@ -363,7 +401,7 @@ async def catalog_compose(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context_cached, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     row = normalize_odoo(body.product, body.origin)
@@ -394,7 +432,7 @@ async def catalog_injected(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context_cached, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     return {"ok": True, "run": mark_injected(ctx["license"])}
@@ -406,7 +444,7 @@ async def catalog_session_tick(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context_cached, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     if not get_session(ctx["license"]):
@@ -428,7 +466,7 @@ async def catalog_job(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context_cached, license, key, x_aeo_license)
     session = public_session(ctx["license"]) if ctx["license"] else {"ok": True, "tree": [], "queue": {"window": []}}
     general = connection_store.get_job(ctx["license"] or "") or {}
     return {
@@ -451,7 +489,7 @@ async def catalog_publish(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ) -> Dict[str, Any]:
-    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context_cached, license, key, x_aeo_license)
     if not ctx["license"]:
         raise HTTPException(status_code=400, detail="Falta la clave de activación.")
     state = get_session(ctx["license"])
@@ -489,6 +527,7 @@ async def catalog_publish(
             "reason": result.get("reason"),
         },
     )
+    _invalidate_context(ctx["license"])
     return {**result, **metering}
 
 
@@ -498,7 +537,7 @@ async def catalog_report_pdf(
     key: Optional[str] = None,
     x_aeo_license: Optional[str] = Header(default=None, alias="X-AEO-License"),
 ):
-    ctx = await asyncio.to_thread(_context, license, key, x_aeo_license)
+    ctx = await asyncio.to_thread(_context_cached, license, key, x_aeo_license)
     lic = ctx["license"] or ""
     session = get_session(lic) or {}
     if not report_ready(lic):
