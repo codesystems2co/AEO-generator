@@ -335,6 +335,15 @@ export default function CatalogWizard({ lang: langProp }) {
 
   useEffect(() => {
     if (step !== 2 || !session || session.done || run?.running || ticking.current) return undefined
+    // Do not advance/analyze rows while the merchant must buy fichas
+    // (restantes === 0 && pendientes > 0). Catalog total stays on the session.
+    const rem = Number(offer?.remaining ?? Math.max(0, Number(offer?.allowance ?? 0) - Number(offer?.used ?? offer?.processed_ids ?? 0)))
+    const total = Number(offer?.catalog_total ?? session?.total ?? run?.total ?? 0)
+    const usedN = Number(offer?.used ?? offer?.processed_ids ?? 0)
+    const needed = offer?.needed_qty != null && Number.isFinite(Number(offer.needed_qty))
+      ? Math.max(0, Number(offer.needed_qty))
+      : Math.max(0, total - usedN - rem)
+    if (rem <= 0 && needed > 0) return undefined
     ticking.current = true
     const timer = window.setTimeout(() => {
       api.catalog.tick()
@@ -345,7 +354,7 @@ export default function CatalogWizard({ lang: langProp }) {
         })
     }, 350)
     return () => window.clearTimeout(timer)
-  }, [step, session])
+  }, [step, session, offer, run])
 
   async function startScan() {
     setError('')
@@ -453,6 +462,9 @@ export default function CatalogWizard({ lang: langProp }) {
     .replace('{allowance}', String(allowance))
   const creditsBlocked = remaining <= 0
   const needsMoreFichas = neededQty > 0
+  // Hide queue entirely when there are no fichas left to process new rows
+  // (restantes === 0 && pendientes > 0 → Adquirir CTA). Resume when restantes > 0.
+  const showCatalogQueue = !(remaining <= 0 && neededQty > 0)
   const selected = PLATFORMS.find((row) => row.id === platform) || PLATFORMS[0]
   const windowRows = session?.queue?.window || EMPTY_QUEUE
   const runWindowRows = run?.window || EMPTY_QUEUE
@@ -724,7 +736,7 @@ export default function CatalogWizard({ lang: langProp }) {
                   </a>
                 </div>
               ) : null}
-              {run?.total ? (
+              {run?.total && showCatalogQueue ? (
                 <div className="catalog-queue-panel" role="status" aria-live="polite">
                   <p className="catalog-block-caption">
                     {queueProgressCaption(run.caption, run.done || 0, run.total || 0, c)}
@@ -747,7 +759,7 @@ export default function CatalogWizard({ lang: langProp }) {
                   <IconSearch />
                   <span>{busy ? c.analyzing : c.analyze}</span>
                 </button>
-              ) : (
+              ) : showCatalogQueue ? (
                 <div className="catalog-queue-panel" role="status" aria-live="polite">
                   <p className="catalog-block-caption">
                     {queueProgressCaption(
@@ -770,7 +782,7 @@ export default function CatalogWizard({ lang: langProp }) {
                   </ol>
                   {session.done ? <p className="gap-ok">✓ {session.analyzed_count} · {c.analyzed}</p> : <p>{c.analyzing}</p>}
                 </div>
-              )}
+              ) : null}
             </>
           )}
 
