@@ -325,8 +325,11 @@ export default function CatalogWizard({ lang: langProp }) {
   const allowance = Number(offer?.allowance ?? 0)
   const used = Number(offer?.used ?? offer?.processed_ids ?? 0)
   const remaining = Number(offer?.remaining ?? Math.max(0, allowance - used))
-  const catalogTotal = Number(session?.total ?? run?.total ?? 0)
+  const catalogTotal = Number(
+    offer?.catalog_total ?? session?.total ?? run?.total ?? 0,
+  )
   // Unmet NEW ids only: (catalog − already processed/applied) − remaining allowance.
+  // pendientes_por_comprar = max(0, catalogo_total − consumidas − restantes)
   const computedNeeded = Math.max(0, catalogTotal - used - remaining)
   const neededQty = offer?.needed_qty != null && Number.isFinite(Number(offer.needed_qty))
     ? Math.max(0, Number(offer.needed_qty))
@@ -336,7 +339,13 @@ export default function CatalogWizard({ lang: langProp }) {
     host,
     neededQty > 0 ? neededQty : Math.max(1, remaining || 1),
   )
+  // Labels: catalogo_total / compradas / consumidas / restantes / pendientes
   const fichaBadge = c.fichaBadge
+    .replace('{total}', String(catalogTotal))
+    .replace('{compradas}', String(allowance))
+    .replace('{consumidas}', String(used))
+    .replace('{restantes}', String(remaining))
+    .replace('{pendientes}', String(neededQty))
     .replace('{remaining}', String(remaining))
     .replace('{used}', String(used))
     .replace('{allowance}', String(allowance))

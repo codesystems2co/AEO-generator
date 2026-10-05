@@ -259,6 +259,8 @@ def metering_snapshot(
         "processed_ids": used,
         "acquire_url": catalog_product_url(False, host=host, quantity=qty) or PRODUCT_URL,
     }
+    if catalog_total is not None:
+        out["catalog_total"] = max(0, int(catalog_total))
     if catalog_total is not None or needed_qty is not None:
         out["needed_qty"] = max(0, int(qty or 0))
     return out

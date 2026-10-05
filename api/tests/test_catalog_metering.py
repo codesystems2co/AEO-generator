@@ -267,6 +267,7 @@ class NeededQtyTest(_StoreCase):
             catalog_metering.record_applied("lic-s", host, i + 1)
         snap = catalog_metering.metering_snapshot("lic-s", host, 0, catalog_total=54)
         self.assertEqual(snap["used"], 3)
+        self.assertEqual(snap["catalog_total"], 54)
         self.assertEqual(snap["needed_qty"], 51)
         self.assertIn("qty=51", snap["acquire_url"])
 

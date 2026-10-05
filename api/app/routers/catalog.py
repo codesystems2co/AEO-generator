@@ -514,6 +514,7 @@ async def catalog_job(
         )
         offer = {
             **offer,
+            "catalog_total": total,
             "needed_qty": needed,
             "acquire_url": catalog_product_url(
                 False,
