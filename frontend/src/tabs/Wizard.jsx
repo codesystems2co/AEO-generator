@@ -1298,7 +1298,7 @@ export default function Wizard({ lang: langProp }) {
                               />
                             </div>
                           )}
-                          <div className="form-row span-full">
+                          <div className="form-row">
                             <label htmlFor="aeo-db">{t.connect.db}</label>
                             <input id="aeo-db" value={database} onChange={(e) => setDatabase(e.target.value)} placeholder="osh" autoComplete="off" />
                           </div>
