@@ -80,4 +80,15 @@ Coverage of required cases:
 1. Allowance N, M new IDs with M>N → processes N, blocks M−N  
 2. Re-processing processed ID costs 0  
 3. Persistence round-trip (save/load store)  
-4. Zero allowance → all new writes blocked; analysis does not consume  
+4. Zero allowance → all new writes blocked; analysis does not consume
+
+
+## Deploy (2026-10-05)
+
+- Branch/commit: `feat/catalog-ficha-metering` @ `8a22baaca60e6d1532244638e5726e3cb26952fa`
+- Pushed to `codesystems2co/AEO-generator` (not gwrxuk).
+- Qty source: **(a)** XML-RPC `sale.order.line.product_uom_qty` via existing `_odoo_execute` (service creds as k8s secret `aeo-odoo-rpc`). No aeo_base/Odoo restart.
+- Storage: `/app/data/catalog_metering.json` on **hostPath** `/var/lib/aeo-generator-api-data` (was ephemeral; mounted for pod-restart survival).
+- «Processed» = successful **apply/write** of a new product id (`record_applied` after `write_product`).
+- S00247 live: allowance **0**, remaining **0**, gate opens (`owned` via `general_allowed`), new-ID writes blocked; general wizard unchanged.
+- Tests: `python3 -m unittest tests.test_catalog_metering` → 9 OK.
