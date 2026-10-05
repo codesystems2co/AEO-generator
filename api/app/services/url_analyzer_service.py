@@ -1,12 +1,13 @@
 """Fetch and parse a URL for meta tags and content (external SEO data)."""
+import json
 import re
 from typing import List, Optional
-from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
 
 from app.schemas import URLAnalyzeResponse
+from app.services.store_profile import organization_name_from_ld
 
 
 USER_AGENT = "AEO-SEO-Generator/1.0 (Compatible; Analysis Bot)"
@@ -59,6 +60,7 @@ def analyze_url(url: str) -> URLAnalyzeResponse:
         meta_desc = meta["content"].strip()
     og_title = None
     og_desc = None
+    og_site_name = None
     for meta in soup.find_all("meta", property=re.compile(r"og:", re.I)):
         p = (meta.get("property") or "").lower()
         c = meta.get("content") or ""
@@ -66,6 +68,22 @@ def analyze_url(url: str) -> URLAnalyzeResponse:
             og_title = c.strip()
         elif p == "og:description":
             og_desc = c.strip()
+        elif p == "og:site_name":
+            og_site_name = c.strip() or None
+
+    organization_name = None
+    for script in soup.find_all("script", attrs={"type": re.compile(r"ld\+json", re.I)}):
+        raw = (script.string or script.get_text() or "").strip()
+        if not raw:
+            continue
+        try:
+            parsed = json.loads(raw)
+        except Exception:
+            continue
+        found = organization_name_from_ld(parsed)
+        if found:
+            organization_name = found
+            break
 
     h1_list = [h.get_text(strip=True) for h in soup.find_all("h1") if h.get_text(strip=True)]
     headings = []
@@ -82,6 +100,8 @@ def analyze_url(url: str) -> URLAnalyzeResponse:
         meta_description=meta_desc or og_desc,
         og_title=og_title or title,
         og_description=og_desc or meta_desc,
+        og_site_name=og_site_name,
+        organization_name=organization_name,
         h1_list=h1_list,
         headings=headings[:50],
         word_count=word_count,

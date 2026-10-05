@@ -569,6 +569,8 @@ async def readiness(site_url: str, mode: Optional[str] = None) -> Dict[str, Any]
             "title": page.title,
             "meta_description": page.meta_description,
             "h1_list": page.h1_list,
+            "og_site_name": getattr(page, "og_site_name", None),
+            "organization_name": getattr(page, "organization_name", None),
             "word_count": page.word_count,
             "status_code": page.status_code,
         },

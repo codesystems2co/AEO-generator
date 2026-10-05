@@ -16,6 +16,7 @@ import {
   writeOrderQuery,
 } from '../wizard/orderContext'
 import { odooDatabaseDefault, orderLineShopUrl } from '../wizard/shopConnectHelpers'
+import { deriveStoreProfile } from '../wizard/storeProfile'
 import { copyFor, localeOf } from '../i18n/copy'
 import '../App.css'
 
@@ -683,20 +684,18 @@ export default function Wizard({ lang: langProp }) {
 
   useEffect(() => {
     if (!google) return
-    const proposedTitle = String(google.remediation?.title || '').trim()
-    const proposedMeta = String(google.remediation?.meta_description || '').trim()
-    const proposedH1 = String(google.remediation?.h1 || '').trim()
     const hostName = businessFromHost(siteUrl)
     const stub = hostName.trim().toLowerCase()
     const isStub = (value) => {
       const current = String(value || '').trim().toLowerCase()
       return !current || current === stub
     }
-    setTopic((prev) => (isStub(prev) ? (proposedH1 || proposedTitle || hostName) : prev))
-    setBusinessName((prev) => (isStub(prev) ? (proposedH1 || hostName) : prev))
+    const profile = deriveStoreProfile(google.page || {}, google.remediation || {}, hostName)
+    setTopic((prev) => (isStub(prev) ? (profile.topic || hostName) : prev))
+    setBusinessName((prev) => (isStub(prev) ? (profile.business || hostName) : prev))
     setContext((prev) => {
       if (String(prev || '').trim()) return prev
-      return [proposedMeta, proposedTitle].filter(Boolean).join('\n')
+      return profile.facts || ''
     })
   }, [google, siteUrl])
 

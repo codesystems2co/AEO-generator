@@ -9,6 +9,7 @@ import httpx
 from app.config import settings
 from app.services.chat_service import check_ollama_health
 from app.services.google_search_service import _fetch_text, company_profile_ready, oauth_connected, readiness
+from app.services.store_profile import seed_remediation_from_page
 
 AUTO_FIXABLE = {
     "Title tag",
@@ -262,6 +263,9 @@ async def autofix(
                 "remaining_after": [g["name"] for g in overlay if g.get("fixable") and not g.get("virtual_passed")],
             }
         )
+
+    if not fix:
+        fix = seed_remediation_from_page(report.get("page"))
 
     remaining_fixable = [g for g in overlay if g.get("fixable") and not g.get("virtual_passed")]
     hard = [g for g in overlay if g.get("hard") and not g.get("passed")]

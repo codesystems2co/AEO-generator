@@ -134,6 +134,8 @@ class URLAnalyzeResponse(BaseModel):
     meta_description: Optional[str] = None
     og_title: Optional[str] = None
     og_description: Optional[str] = None
+    og_site_name: Optional[str] = None
+    organization_name: Optional[str] = None
     h1_list: List[str]
     headings: List[str]
     word_count: int
