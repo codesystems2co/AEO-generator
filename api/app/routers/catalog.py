@@ -61,7 +61,7 @@ def _context_cached(
             hit = _CONTEXT_CACHE.get(lic)
             if hit and (now - hit.get("at", 0)) < _CONTEXT_TTL_SEC:
                 return hit["ctx"]
-    ctx = _context(license, key, header)
+    ctx = _context(license, key, header, light=True)
     if lic:
         with _CONTEXT_CACHE_LOCK:
             _CONTEXT_CACHE[lic] = {"at": time.monotonic(), "ctx": ctx}
@@ -220,6 +220,8 @@ def _context(
     license: Optional[str],
     key: Optional[str],
     header: Optional[str],
+    *,
+    light: bool = False,
 ) -> Dict[str, Any]:
     lic = extract_license(header, license, key)
     consumed: Dict[str, Any] = {}
@@ -237,7 +239,12 @@ def _context(
             host = (pack.get("connection") or {}).get("url")
     rows, lines_error = _order_line_rows(order)
     partner_id = consumed.get("partner_id")
-    meter_rows, partner_err = _partner_catalog_rows(partner_id, fallback_rows=rows)
+    # Light path (offer/job cache fill): skip partner-wide scan — gate opens via
+    # general_allowed and S00247-style orders have allowance 0 either way.
+    if light:
+        meter_rows, partner_err = rows, None
+    else:
+        meter_rows, partner_err = _partner_catalog_rows(partner_id, fallback_rows=rows)
     lines_error = lines_error or partner_err
     offer = catalog_offer(_line_names(rows), host, platforms)
     # Any valid active license for the site unlocks catalog (no second purchase).
