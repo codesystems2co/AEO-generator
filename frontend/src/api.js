@@ -183,7 +183,7 @@ export const api = {
   },
   catalog: {
     offer: (license, options = {}) => request(`/api/catalog/offer${license ? `?license=${encodeURIComponent(license)}` : ''}`, options),
-    start: () => request('/api/catalog/session', { method: 'POST', body: JSON.stringify({ batch: true }) }),
+    start: () => request('/api/catalog/session', { method: 'POST', body: JSON.stringify({}) }),
     tick: () => request('/api/catalog/tick', { method: 'POST', body: '{}' }),
     job: (license) => request(`/api/catalog/job${license ? `?license=${encodeURIComponent(license)}` : ''}`),
     publish: () => request('/api/catalog/publish', { method: 'POST', body: '{}' }),
