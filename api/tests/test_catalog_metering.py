@@ -300,3 +300,61 @@ class AcquireUrlTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LightPathPartnerMeteringTest(unittest.TestCase):
+    """Regression: light/cached offer must count sibling catalog SOs (S00737)."""
+
+    def tearDown(self):
+        from app.routers import catalog as catalog_router
+
+        with catalog_router._CONTEXT_CACHE_LOCK:
+            catalog_router._CONTEXT_CACHE.clear()
+        with catalog_router._PARTNER_ROWS_LOCK:
+            catalog_router._PARTNER_ROWS_CACHE.clear()
+
+    def test_light_context_uses_partner_catalog_rows(self):
+        from unittest import mock
+        from app.routers import catalog as catalog_router
+
+        host = "https://gap-advertisements-tool-highs.trycloudflare.com"
+        license_rows = [
+            {
+                "name": "AEO / SEO y Optimizador de Búsqueda",
+                "product_template_id": [109, "General"],
+                "product_uom_qty": 1,
+                "aeo_site_url": host,
+            }
+        ]
+        partner_rows = license_rows + [
+            {
+                "name": "Product Catalog AEO and SEO pack With IA",
+                "product_template_id": [110, "Catalog"],
+                "product_uom_qty": 95,
+                "aeo_site_url": host,
+            }
+        ]
+        consumed = {
+            "allowed": True,
+            "sale_order_name": "S00247",
+            "aeo_site_url": host,
+            "partner_id": 213,
+        }
+
+        with mock.patch("app.routers.catalog.consume", return_value=consumed), mock.patch(
+            "app.routers.catalog.connection_store.public_platforms",
+            return_value={"platforms": {}, "connection": {}},
+        ), mock.patch(
+            "app.routers.catalog._order_line_rows",
+            return_value=(license_rows, None),
+        ), mock.patch(
+            "app.routers.catalog._partner_catalog_rows",
+            return_value=(partner_rows, None),
+        ) as partner_scan:
+            ctx = catalog_router._context("AEO-test", None, None, light=True)
+            cached = catalog_router._context_cached("AEO-test", None, None)
+
+        partner_scan.assert_called()
+        self.assertEqual(ctx["offer"]["allowance"], 95)
+        self.assertEqual(ctx["offer"]["remaining"], 95)
+        self.assertEqual(cached["offer"]["allowance"], 95)

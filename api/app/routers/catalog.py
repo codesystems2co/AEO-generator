@@ -48,6 +48,12 @@ _CONTEXT_CACHE: Dict[str, Dict[str, Any]] = {}
 _CONTEXT_CACHE_LOCK = threading.Lock()
 _CONTEXT_TTL_SEC = 8.0
 
+# Partner-wide catalog line scan cache (keyed by partner_id). Keeps light/cached
+# offer+job paths metering sibling pack SOs without re-hitting Odoo every poll.
+_PARTNER_ROWS_CACHE: Dict[int, Dict[str, Any]] = {}
+_PARTNER_ROWS_LOCK = threading.Lock()
+_PARTNER_ROWS_TTL_SEC = 30.0
+
 
 def _context_cached(
     license: Optional[str],
@@ -147,7 +153,8 @@ def _partner_catalog_rows(
     """Confirmed catalog lines across all partner sale orders (not only license SO).
 
     Falls back to ``fallback_rows`` (license SO lines) when partner_id is missing
-    or Odoo cannot list partner orders.
+    or Odoo cannot list partner orders. Results are cached briefly per partner_id
+    so light/cached offer+job paths stay fast (RPC session + hang-fix caches kept).
     """
     fallback = list(fallback_rows or [])
     try:
@@ -156,6 +163,12 @@ def _partner_catalog_rows(
         pid = 0
     if not pid:
         return fallback, None
+    now = time.monotonic()
+    with _PARTNER_ROWS_LOCK:
+        hit = _PARTNER_ROWS_CACHE.get(pid)
+        if hit and (now - float(hit.get("at") or 0)) < _PARTNER_ROWS_TTL_SEC:
+            cached_rows = list(hit.get("rows") or [])
+            return (cached_rows or fallback), hit.get("err")
     try:
         from app.services.entitlement_service import _odoo_execute
 
@@ -173,7 +186,10 @@ def _partner_catalog_rows(
         if err:
             return fallback, err
         # Prefer partner-wide rows; if empty keep license SO rows for diagnostics.
-        return rows or fallback, None
+        out_rows = rows or fallback
+        with _PARTNER_ROWS_LOCK:
+            _PARTNER_ROWS_CACHE[pid] = {"at": time.monotonic(), "rows": list(rows or []), "err": None}
+        return out_rows, None
     except Exception as exc:
         return fallback, str(exc)[:200] or "odoo_unavailable"
 
@@ -244,12 +260,12 @@ def _context(
             host = (pack.get("connection") or {}).get("url")
     rows, lines_error = _order_line_rows(order)
     partner_id = consumed.get("partner_id")
-    # Light path (offer/job cache fill): skip partner-wide scan — gate opens via
-    # general_allowed and S00247-style orders have allowance 0 either way.
-    if light:
-        meter_rows, partner_err = rows, None
-    else:
-        meter_rows, partner_err = _partner_catalog_rows(partner_id, fallback_rows=rows)
+    # Always scan partner-wide confirmed catalog lines (sibling pack SOs such as
+    # S00737), including light/cached offer+job paths. Keep _context / RPC /
+    # partner-row caches so this does not bring back the Comprobando hang.
+    # ``light`` remains for callers; it no longer skips metering rows.
+    _ = light
+    meter_rows, partner_err = _partner_catalog_rows(partner_id, fallback_rows=rows)
     lines_error = lines_error or partner_err
     offer = catalog_offer(_line_names(rows), host, platforms)
     # Any valid active license for the site unlocks catalog (no second purchase).
