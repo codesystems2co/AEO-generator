@@ -85,10 +85,11 @@ Coverage of required cases:
 
 ## Deploy (2026-10-05)
 
-- Branch/commit: `feat/catalog-ficha-metering` @ `8a22baaca60e6d1532244638e5726e3cb26952fa`
+- Branch/commit: `feat/catalog-ficha-metering` @ `706481a` (metering `8a22baa` + deploy note `9d5b9b0` + XML-RPC timeout `706481a`)
 - Pushed to `codesystems2co/AEO-generator` (not gwrxuk).
 - Qty source: **(a)** XML-RPC `sale.order.line.product_uom_qty` via existing `_odoo_execute` (service creds as k8s secret `aeo-odoo-rpc`). No aeo_base/Odoo restart.
 - Storage: `/app/data/catalog_metering.json` on **hostPath** `/var/lib/aeo-generator-api-data` (was ephemeral; mounted for pod-restart survival).
 - «Processed» = successful **apply/write** of a new product id (`record_applied` after `write_product`).
 - S00247 live: allowance **0**, remaining **0**, gate opens (`owned` via `general_allowed`), new-ID writes blocked; general wizard unchanged.
 - Tests: `python3 -m unittest tests.test_catalog_metering` → 9 OK.
+- Follow-up: XML-RPC 15s socket timeout + `asyncio.to_thread` for catalog `_context` (avoids wedging the API when Odoo is slow).
