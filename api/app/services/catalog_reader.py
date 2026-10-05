@@ -45,18 +45,27 @@ def _path(value: str) -> str:
     return raw or "/"
 
 
+# All saleable active products/services — no artificial cap; BlockSession pages by 20.
+ODOO_CATALOG_DOMAIN = [("sale_ok", "=", True), ("active", "=", True)]
+
+
 def odoo_count_call() -> Dict[str, Any]:
-    return {"model": "product.template", "method": "search_count", "domain": []}
+    return {
+        "model": "product.template",
+        "method": "search_count",
+        "domain": list(ODOO_CATALOG_DOMAIN),
+    }
 
 
 def odoo_fetch_call(offset: int, limit: int) -> Dict[str, Any]:
     return {
         "model": "product.template",
         "method": "search_read",
-        "domain": [],
+        "domain": list(ODOO_CATALOG_DOMAIN),
         "fields": list(ODOO_FIELDS),
         "offset": int(offset),
         "limit": int(limit),
+        "order": "id asc",
     }
 
 

@@ -26,6 +26,34 @@ function generalHref(license, site) {
   return text ? `/?${text}` : '/'
 }
 
+
+function withAcquireParams(baseUrl, host, quantity) {
+  try {
+    const url = new URL(baseUrl || CATALOG_PRODUCT_PAGE_URL)
+    let bare = ''
+    const raw = (host || '').trim()
+    if (raw) {
+      try {
+        bare = new URL(raw.includes('://') ? raw : `https://${raw}`).hostname || ''
+      } catch {
+        bare = raw.replace(/^https?:\/\//i, '').split('/')[0]
+      }
+      bare = bare.toLowerCase().replace(/^www\./, '')
+    }
+    if (bare) {
+      url.searchParams.set('aeo_site_url', `https://${bare}`)
+      url.searchParams.set('hostname', bare)
+    }
+    const qty = Number(quantity)
+    if (Number.isFinite(qty) && qty > 0) {
+      url.searchParams.set('qty', String(Math.trunc(qty)))
+    }
+    return url.toString()
+  } catch {
+    return baseUrl || CATALOG_PRODUCT_PAGE_URL
+  }
+}
+
 function hostLabel(url) {
   try {
     return new URL(url).host.replace(/^www\./i, '') || url
@@ -285,12 +313,19 @@ export default function CatalogWizard({ lang: langProp }) {
   const allowance = Number(offer?.allowance ?? 0)
   const used = Number(offer?.used ?? offer?.processed_ids ?? 0)
   const remaining = Number(offer?.remaining ?? Math.max(0, allowance - used))
-  const acquireUrl = offer?.acquire_url || CATALOG_PRODUCT_PAGE_URL
+  const catalogTotal = Number(session?.total ?? run?.total ?? 0)
+  const neededQty = Math.max(0, catalogTotal - used - remaining)
+  const acquireUrl = withAcquireParams(
+    offer?.acquire_url || CATALOG_PRODUCT_PAGE_URL,
+    host,
+    neededQty > 0 ? neededQty : Math.max(1, remaining || 1),
+  )
   const fichaBadge = c.fichaBadge
     .replace('{remaining}', String(remaining))
     .replace('{used}', String(used))
     .replace('{allowance}', String(allowance))
   const creditsBlocked = remaining <= 0
+  const needsMoreFichas = neededQty > 0
   const selected = PLATFORMS.find((row) => row.id === platform) || PLATFORMS[0]
   const windowRows = session?.queue?.window || []
   const catalogTree = session?.tree || []
@@ -414,19 +449,6 @@ export default function CatalogWizard({ lang: langProp }) {
           <span className="badge badge-muted">{hostLabel(host)}</span>
           <span className={`badge ${creditsBlocked ? 'badge-warn' : 'badge-muted'}`}>{fichaBadge}</span>
         </div>
-        {creditsBlocked ? (
-          <div style={{ marginBottom: '0.85rem' }}>
-            <p className="error-msg" style={{ marginBottom: '0.5rem' }}>
-              {c.noCredits
-                .replace('{processed}', String(used))
-                .replace('{needed}', String(Math.max(1, (session?.total || 0) - used)))}
-            </p>
-            <a className="btn gate-acquire" href={acquireUrl} target="_blank" rel="noopener noreferrer">
-              <IconCart />
-              {c.acquireMore}
-            </a>
-          </div>
-        ) : null}
         <p style={{ marginTop: 0 }}>
           <a href={generalHref(query.license, host)}>{c.back}</a>
         </p>
@@ -540,6 +562,24 @@ export default function CatalogWizard({ lang: langProp }) {
           {step === 2 && (
             <>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>{c.catalogIntro}</p>
+              {needsMoreFichas ? (
+                <div className="catalog-buy-panel" style={{ marginBottom: '1rem' }}>
+                  <p className="error-msg" style={{ marginBottom: '0.5rem' }}>
+                    {(c.buyToFinishHint || c.noCredits)
+                      .replace('{processed}', String(used))
+                      .replace('{needed}', String(neededQty))}
+                  </p>
+                  <a
+                    className="btn gate-acquire"
+                    href={withAcquireParams(offer?.acquire_url || CATALOG_PRODUCT_PAGE_URL, host, neededQty)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <IconCart />
+                    {(c.buyToFinish || c.acquireMore).replace('{qty}', String(neededQty))}
+                  </a>
+                </div>
+              ) : null}
               {run?.total ? (
                 <div className="catalog-queue-panel" role="status" aria-live="polite">
                   <p className="catalog-block-caption">

@@ -171,11 +171,28 @@ class PrestashopCatalogShop(HttpCatalogShop):
         super().__init__(http, origin, "prestashop", set(_TARGETS["prestashop"].values()) | {"link_rewrite"})
 
     def count(self) -> int:
+        """Full product count — page id listing when PrestaShop omits total."""
         payload = self.http("GET", "/api/products", {"limit": "0,1", "display": "[id]"})
         if isinstance(payload, dict) and payload.get("total") is not None:
             return int(payload["total"])
-        rows = _as_list((payload or {}).get("products") if isinstance(payload, dict) else payload)
-        return int((payload or {}).get("count") or len(rows) or 0)
+        if isinstance(payload, dict) and payload.get("count") is not None:
+            return int(payload["count"])
+        # Fall back: walk id pages until a short page (no artificial max).
+        total = 0
+        page_size = 100
+        offset = 0
+        while True:
+            chunk = self.http(
+                "GET",
+                "/api/products",
+                {"limit": f"{offset},{page_size}", "display": "[id]"},
+            )
+            rows = _as_list((chunk or {}).get("products") if isinstance(chunk, dict) else chunk)
+            total += len(rows)
+            if len(rows) < page_size:
+                break
+            offset += page_size
+        return total
 
     def fetch(self, offset: int, limit: int) -> List[Dict[str, Any]]:
         params = prestashop_fetch_params(offset, limit)
@@ -193,22 +210,37 @@ class WooCatalogShop(HttpCatalogShop):
         if self.total:
             return self.total
         _rows, total = self._page(1, 1)
+        if total and total >= 1:
+            self.total = total
+            return total
+        # No X-WP-Total: page until a short page so every product is counted.
+        total = 0
+        page = 1
+        per_page = 100
+        while True:
+            rows, _hint = self._page(page, per_page)
+            total += len(rows)
+            if len(rows) < per_page:
+                break
+            page += 1
         self.total = total
         return total
 
     def fetch(self, offset: int, limit: int) -> List[Dict[str, Any]]:
         params = woocommerce_fetch_params(offset, limit)
         rows, total = self._page(params["page"], params["per_page"])
-        self.total = total
+        if total:
+            self.total = total
         return [normalize_woocommerce(row) for row in rows]
 
     def _page(self, page: int, per_page: int) -> Tuple[List[Dict[str, Any]], int]:
         payload = self.http("GET", "/wp-json/wc/v3/products", {"page": page, "per_page": per_page})
         if isinstance(payload, dict):
             rows = list(payload.get("products") or payload.get("items") or [])
-            total = int(payload.get("total") or payload.get("x-wp-total") or len(rows) or 0)
+            total = int(payload.get("total") or payload.get("x-wp-total") or 0)
             return rows, total
-        return list(payload or []), len(payload or [])
+        rows = list(payload or [])
+        return rows, 0
 
 
 def _as_list(value: Any) -> List[Dict[str, Any]]:

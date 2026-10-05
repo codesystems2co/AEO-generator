@@ -3,6 +3,7 @@ import unittest
 
 from app.services.catalog_reader import (
     BLOCK_SIZE,
+    ODOO_CATALOG_DOMAIN,
     BlockOpenError,
     BlockSession,
     ForeignUrlError,
@@ -158,3 +159,15 @@ class PlatformCallTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class OdooCatalogScopeTest(unittest.TestCase):
+
+    def test_odoo_calls_cover_all_saleable_products(self):
+        count = odoo_count_call()
+        fetch = odoo_fetch_call(40, 20)
+        self.assertEqual(count["domain"], list(ODOO_CATALOG_DOMAIN))
+        self.assertEqual(fetch["domain"], list(ODOO_CATALOG_DOMAIN))
+        self.assertEqual(fetch["offset"], 40)
+        self.assertEqual(fetch["limit"], 20)
+        self.assertIn(("sale_ok", "=", True), ODOO_CATALOG_DOMAIN)
+

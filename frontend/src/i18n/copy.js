@@ -117,6 +117,8 @@ const COPY = {
       noCredits:
         'Quedan 0 fichas nuevas. Ya procesados: {processed} (puede volver a procesarlos sin coste). Para {needed} productos nuevos, adquiera más fichas.',
       acquireMore: 'Adquirir más fichas',
+      buyToFinish: 'Adquirir {qty} fichas para completar el catálogo',
+      buyToFinishHint: 'Faltan fichas para procesar todos los productos y servicios leídos. La compra se abre en una pestaña nueva con el hostname de esta sesión.',
     },
     step: {
       connect: 'Conexión',
@@ -435,6 +437,8 @@ const COPY = {
       noCredits:
         '0 new sheets left. Already processed: {processed} (you can re-process them at no cost). For {needed} new products, acquire more sheets.',
       acquireMore: 'Acquire more sheets',
+      buyToFinish: 'Acquire {qty} sheets to finish the catalog',
+      buyToFinishHint: 'More sheets are needed to process every product and service that was read. Purchase opens in a new tab with this session hostname.',
     },
     step: {
       connect: 'Connection',
