@@ -717,7 +717,9 @@ export default function CatalogWizard({ lang: langProp }) {
 
           {step === 2 && (
             <>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>{c.catalogIntro}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                {showCatalogQueue ? c.catalogIntro : (c.catalogIntroWaitFichas || c.catalogIntro)}
+              </p>
               {needsMoreFichas ? (
                 <div className="catalog-buy-panel" style={{ marginBottom: '1rem' }}>
                   <p className="error-msg" style={{ marginBottom: '0.5rem' }}>
