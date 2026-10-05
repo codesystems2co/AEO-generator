@@ -202,7 +202,7 @@ function useVisibleQueue(windowRows) {
     const currIds = new Set(curr.map((row) => row.id))
     const departed = prev.filter((row) => row.id != null && !currIds.has(row.id))
     prevRef.current = curr
-    if (!departed.length) return undefined
+    if (!departed.length) return
     const stamp = Date.now()
     const nextFlash = departed.map((row) => ({
       id: row.id,
@@ -211,11 +211,22 @@ function useVisibleQueue(windowRows) {
       _flashAt: stamp,
     }))
     setFlash((prevFlash) => [...nextFlash, ...(prevFlash || EMPTY_QUEUE)].slice(0, 6))
-    const timer = window.setTimeout(() => {
-      setFlash((prevFlash) => (prevFlash || EMPTY_QUEUE).filter((row) => (row._flashAt || 0) !== stamp))
-    }, 850)
-    return () => window.clearTimeout(timer)
   }, [rows])
+
+  // Prune finished flashes by age. Keep this separate so job-poll array identity
+  // changes cannot cancel the removal timeout via effect cleanup.
+  useEffect(() => {
+    if (!(flash || EMPTY_QUEUE).length) return undefined
+    const timer = window.setInterval(() => {
+      const now = Date.now()
+      setFlash((prevFlash) => {
+        const cur = prevFlash || EMPTY_QUEUE
+        const next = cur.filter((row) => now - (row._flashAt || 0) < 850)
+        return next.length === cur.length ? cur : next
+      })
+    }, 150)
+    return () => window.clearInterval(timer)
+  }, [flash])
 
   const live = rows.filter((row) => row.state !== 'analyzed')
   const liveIds = new Set(live.map((row) => row.id))
