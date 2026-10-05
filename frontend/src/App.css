@@ -1049,3 +1049,47 @@ a.btn-secondary {
 .catalog-queue-copy small {
   color: var(--text-muted);
 }
+
+
+/* Compact per-metric ficha metering (not one middot pill) */
+.ficha-meter-grid {
+  display: inline-grid;
+  grid-template-columns: repeat(5, minmax(4.2rem, auto));
+  gap: 0.35rem 0.55rem;
+  align-items: stretch;
+  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.15;
+  vertical-align: middle;
+  max-width: 100%;
+}
+@media (max-width: 720px) {
+  .ficha-meter-grid {
+    grid-template-columns: repeat(2, minmax(5.5rem, 1fr));
+  }
+}
+.ficha-meter-grid.badge-warn { background: rgba(251, 191, 36, 0.2); color: var(--warn); }
+.ficha-meter-grid.badge-muted { background: var(--surface-hover); color: var(--text-muted); }
+.ficha-meter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+.ficha-meter-label {
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+.ficha-meter-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.ficha-meter-grid.badge-warn .ficha-meter-value { color: var(--warn); }

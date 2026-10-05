@@ -340,6 +340,14 @@ export default function CatalogWizard({ lang: langProp }) {
     neededQty > 0 ? neededQty : Math.max(1, remaining || 1),
   )
   // Labels: catalogo_total / compradas / consumidas / restantes / pendientes
+  // Multi-line/column meter (not one middot pill) — formulas unchanged.
+  const fichaMetrics = [
+    { key: 'catalogo', label: c.fichaLabelCatalogo || 'Catálogo', value: catalogTotal },
+    { key: 'compradas', label: c.fichaLabelCompradas || 'Compradas', value: allowance },
+    { key: 'consumidas', label: c.fichaLabelConsumidas || 'Consumidas', value: used },
+    { key: 'restantes', label: c.fichaLabelRestantes || 'Restantes', value: remaining },
+    { key: 'pendientes', label: c.fichaLabelPendientes || 'Pendientes', value: neededQty },
+  ]
   const fichaBadge = c.fichaBadge
     .replace('{total}', String(catalogTotal))
     .replace('{compradas}', String(allowance))
@@ -401,8 +409,15 @@ export default function CatalogWizard({ lang: langProp }) {
             {owned ? t.wizard.withOrder.replace('{name}', offer?.sale_order_name || '') : t.wizard.noOrder}
           </span>
           {host ? <span className="badge badge-muted" style={{ marginLeft: '0.4rem' }}>{hostLabel(host)}</span> : null}
-          <span className={`badge ${creditsBlocked ? 'badge-warn' : 'badge-muted'}`} style={{ marginLeft: '0.4rem' }}>
-            {fichaBadge}
+          <span style={{ marginLeft: '0.4rem', display: 'inline-block', verticalAlign: 'middle' }}>
+            <div className={`ficha-meter-grid ${creditsBlocked ? 'badge-warn' : 'badge-muted'}`} role="group" aria-label={fichaBadge}>
+            {fichaMetrics.map((m) => (
+              <div key={m.key} className="ficha-meter-item">
+                <span className="ficha-meter-label">{m.label}</span>
+                <span className="ficha-meter-value">{m.value}</span>
+              </div>
+            ))}
+          </div>
           </span>
         </p>
         <p>{c.locked}</p>
@@ -472,7 +487,14 @@ export default function CatalogWizard({ lang: langProp }) {
         <div className="btn-row" style={{ marginBottom: '0.85rem' }}>
           <span className="badge badge-success">{t.wizard.withOrder.replace('{name}', offer?.sale_order_name || '')}</span>
           <span className="badge badge-muted">{hostLabel(host)}</span>
-          <span className={`badge ${creditsBlocked ? 'badge-warn' : 'badge-muted'}`}>{fichaBadge}</span>
+<div className={`ficha-meter-grid ${creditsBlocked ? 'badge-warn' : 'badge-muted'}`} role="group" aria-label={fichaBadge}>
+            {fichaMetrics.map((m) => (
+              <div key={m.key} className="ficha-meter-item">
+                <span className="ficha-meter-label">{m.label}</span>
+                <span className="ficha-meter-value">{m.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
         <p style={{ marginTop: 0 }}>
           <a href={generalHref(query.license, host)}>{c.back}</a>

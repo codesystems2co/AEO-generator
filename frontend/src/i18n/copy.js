@@ -114,6 +114,11 @@ const COPY = {
       progressPublish: 'En su catálogo',
       progressReport: 'Árbol por producto o servicio',
       fichaBadge: 'Catálogo {total} · Compradas {compradas} · Consumidas {consumidas} · Restantes {restantes} · Pendientes {pendientes}',
+      fichaLabelCatalogo: 'Catálogo',
+      fichaLabelCompradas: 'Compradas',
+      fichaLabelConsumidas: 'Consumidas',
+      fichaLabelRestantes: 'Restantes',
+      fichaLabelPendientes: 'Pendientes',
       noCredits:
         'Quedan 0 fichas restantes. Consumidas / ya procesadas: {processed} (puede volver a procesarlas sin coste). Pendientes por comprar: {needed}.',
       acquireMore: 'Adquirir fichas pendientes',
@@ -434,6 +439,11 @@ const COPY = {
       progressPublish: 'On your catalog',
       progressReport: 'Tree per product or service',
       fichaBadge: 'Catalog {total} · Purchased {compradas} · Consumed {consumidas} · Remaining {restantes} · Pending {pendientes}',
+      fichaLabelCatalogo: 'Catalog',
+      fichaLabelCompradas: 'Purchased',
+      fichaLabelConsumidas: 'Consumed',
+      fichaLabelRestantes: 'Remaining',
+      fichaLabelPendientes: 'Pending',
       noCredits:
         '0 sheets remaining. Consumed / already processed: {processed} (you can re-process them at no cost). Pending to purchase: {needed}.',
       acquireMore: 'Acquire pending sheets',
