@@ -81,18 +81,28 @@ export function readOrderQuery() {
   try {
     const q = new URLSearchParams(window.location.search)
     const saved = restoreOrder()
-    const license = (q.get('license') || q.get('key') || saved.license || '').trim()
+    const license = (
+      q.get('license')
+      || q.get('key')
+      || q.get('odoo_license_key')
+      || saved.license
+      || ''
+    ).trim()
     const site =
       normalizeCommerceSite(q.get('site') || '')
+      || normalizeCommerceSite(q.get('odoo_hostname') || '')
+      || normalizeCommerceSite(q.get('odoo_domain_selected') || '')
       || normalizeCommerceSite(saved.site || '')
     const githubLogin = (q.get('user') || saved.githubLogin || '').trim()
     const gscHint = q.get('gsc') === 'connected'
+    const hasLicenseParam = !!(q.get('license') || q.get('key') || q.get('odoo_license_key'))
+    const hasSiteParam = !!(q.get('site') || q.get('odoo_hostname') || q.get('odoo_domain_selected'))
     let assistant = ''
     if (q.has('assistant')) {
       assistant = (q.get('assistant') || '').trim()
-    } else if (gscHint && !(q.get('license') || q.get('key') || q.get('site'))) {
+    } else if (gscHint && !(hasLicenseParam || hasSiteParam)) {
       assistant = (saved.assistant || '').trim()
-    } else if (!q.get('license') && !q.get('key') && !q.get('site') && saved.assistant) {
+    } else if (!hasLicenseParam && !hasSiteParam && saved.assistant) {
       assistant = saved.assistant.trim()
     }
     if (license || site || assistant || githubLogin) {
