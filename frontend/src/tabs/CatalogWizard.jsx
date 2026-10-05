@@ -140,6 +140,89 @@ function stateLabel(state, t) {
   return t.queued
 }
 
+/** Map internal/legacy status strings onto En cola / Procesando / Terminado. */
+function humanQueueLabel(state, t) {
+  const raw = String(state || '').trim().toLowerCase()
+  if (!raw || raw === 'queued' || raw === 'pending' || raw === 'waiting' || raw === 'in' || raw === 'entra') {
+    return t.queued
+  }
+  if (
+    raw === 'analyzing'
+    || raw === 'processing'
+    || raw === 'working'
+    || raw === 'running'
+    || raw === 'engine'
+    || raw === 'motor'
+    || raw === 'en curso'
+  ) {
+    return t.analyzingState
+  }
+  // analyzed / done / RPC blurbs / "Sale" / "Motor finished" → Terminado
+  if (
+    raw === 'analyzed'
+    || raw === 'done'
+    || raw === 'finished'
+    || raw === 'complete'
+    || raw === 'terminado'
+    || raw === 'out'
+    || raw === 'sale'
+    || raw.includes('rpc')
+    || raw.includes('create ok')
+  ) {
+    return t.analyzed
+  }
+  return stateLabel(state, t)
+}
+
+function blockIndexFromCaption(caption) {
+  const m = String(caption || '').match(/(?:bloque|block)\s+(\d+)/i)
+  return m ? m[1] : '1'
+}
+
+function queueProgressCaption(caption, done, total, t) {
+  const n = blockIndexFromCaption(caption)
+  const template = t.blockProgress || 'bloque {n} · {done} de {total}'
+  return template
+    .replace('{n}', String(n))
+    .replace('{done}', String(done || 0))
+    .replace('{total}', String(total || 0))
+}
+
+const EMPTY_QUEUE = []
+
+/** Visible queue: in-progress + queued only. Finished rows may flash briefly then drop. */
+function useVisibleQueue(windowRows) {
+  const prevRef = useRef(EMPTY_QUEUE)
+  const [flash, setFlash] = useState(EMPTY_QUEUE)
+  const rows = windowRows && windowRows.length ? windowRows : EMPTY_QUEUE
+
+  useEffect(() => {
+    const prev = prevRef.current || EMPTY_QUEUE
+    const curr = rows
+    const currIds = new Set(curr.map((row) => row.id))
+    const departed = prev.filter((row) => row.id != null && !currIds.has(row.id))
+    prevRef.current = curr
+    if (!departed.length) return undefined
+    const stamp = Date.now()
+    const nextFlash = departed.map((row) => ({
+      id: row.id,
+      name: row.name,
+      state: 'analyzed',
+      _flashAt: stamp,
+    }))
+    setFlash((prevFlash) => [...nextFlash, ...(prevFlash || EMPTY_QUEUE)].slice(0, 6))
+    const timer = window.setTimeout(() => {
+      setFlash((prevFlash) => (prevFlash || EMPTY_QUEUE).filter((row) => (row._flashAt || 0) !== stamp))
+    }, 850)
+    return () => window.clearTimeout(timer)
+  }, [rows])
+
+  const live = rows.filter((row) => row.state !== 'analyzed')
+  const liveIds = new Set(live.map((row) => row.id))
+  const flashing = (flash || EMPTY_QUEUE).filter((row) => !liveIds.has(row.id))
+  return [...flashing, ...live]
+}
+
 export default function CatalogWizard({ lang: langProp }) {
   const query = queryOf()
   const [offer, setOffer] = useState(null)
@@ -360,7 +443,10 @@ export default function CatalogWizard({ lang: langProp }) {
   const creditsBlocked = remaining <= 0
   const needsMoreFichas = neededQty > 0
   const selected = PLATFORMS.find((row) => row.id === platform) || PLATFORMS[0]
-  const windowRows = session?.queue?.window || []
+  const windowRows = session?.queue?.window || EMPTY_QUEUE
+  const runWindowRows = run?.window || EMPTY_QUEUE
+  const visibleSessionRows = useVisibleQueue(windowRows)
+  const visibleRunRows = useVisibleQueue(runWindowRows)
   const catalogTree = session?.tree || []
   const analyzed = session?.products || []
   const connectDone = connected
@@ -630,33 +716,16 @@ export default function CatalogWizard({ lang: langProp }) {
               {run?.total ? (
                 <div className="catalog-queue-panel" role="status" aria-live="polite">
                   <p className="catalog-block-caption">
-                    {run.caption}
-                    {' · '}
-                    {c.progressCount.replace('{done}', String(run.done || 0)).replace('{total}', String(run.total || 0))}
-                    {' · '}
-                    {run.injected || 0} en la tienda
+                    {queueProgressCaption(run.caption, run.done || 0, run.total || 0, c)}
                   </p>
                   <div className="catalog-progress" aria-hidden="true">
                     <span style={{ width: `${run.total ? Math.round(((run.done || 0) / run.total) * 100) : 0}%` }} />
                   </div>
-                  <p className="catalog-block-caption">{c.queueOut}</p>
                   <ol className="catalog-queue">
-                    {(run.left || []).map((row) => (
-                      <li key={`run-out-${row.id}`} className="catalog-queue-item is-analyzed">
-                        <span className="catalog-queue-copy">
-                          <span>{row.name || row.id}</span>
-                          {row.title ? <small>{row.title}</small> : null}
-                        </span>
-                        <strong>{row.source === 'ollama' ? c.engine : c.analyzed}</strong>
-                      </li>
-                    ))}
-                  </ol>
-                  <p className="catalog-block-caption">{c.queueIn}</p>
-                  <ol className="catalog-queue">
-                    {(run.window || []).map((row) => (
-                      <li key={`run-in-${row.id}`} className={`catalog-queue-item is-${row.state}`}>
+                    {visibleRunRows.map((row) => (
+                      <li key={`run-${row.id}`} className={`catalog-queue-item is-${row.state === 'analyzed' ? 'analyzed' : row.state}`}>
                         <span>{row.name || row.id}</span>
-                        <strong>{stateLabel(row.state, c)}</strong>
+                        <strong>{humanQueueLabel(row.state, c)}</strong>
                       </li>
                     ))}
                   </ol>
@@ -670,33 +739,21 @@ export default function CatalogWizard({ lang: langProp }) {
               ) : (
                 <div className="catalog-queue-panel" role="status" aria-live="polite">
                   <p className="catalog-block-caption">
-                    {session.queue?.caption}
-                    {' · '}
-                    {c.progressCount
-                      .replace('{done}', String(session.analyzed_count || 0))
-                      .replace('{total}', String(session.total || 0))}
+                    {queueProgressCaption(
+                      session.queue?.caption,
+                      session.analyzed_count || 0,
+                      session.total || 0,
+                      c,
+                    )}
                   </p>
                   <div className="catalog-progress" aria-hidden="true">
                     <span style={{ width: `${session.total ? Math.round(((session.analyzed_count || 0) / session.total) * 100) : 0}%` }} />
                   </div>
-                  <p className="catalog-block-caption">{c.queueOut}</p>
                   <ol className="catalog-queue">
-                    {(session.left || []).map((row) => (
-                      <li key={`out-${row.id}`} className="catalog-queue-item is-analyzed">
-                        <span className="catalog-queue-copy">
-                          <span>{row.name || row.id}</span>
-                          {row.title ? <small>{row.title}</small> : null}
-                        </span>
-                        <strong>{row.source === 'ollama' ? c.engine : c.analyzed}</strong>
-                      </li>
-                    ))}
-                  </ol>
-                  <p className="catalog-block-caption">{c.queueIn}</p>
-                  <ol className="catalog-queue">
-                    {windowRows.map((row) => (
-                      <li key={row.id} className={`catalog-queue-item is-${row.state}`}>
+                    {visibleSessionRows.map((row) => (
+                      <li key={row.id} className={`catalog-queue-item is-${row.state === 'analyzed' ? 'analyzed' : row.state}`}>
                         <span>{row.name || row.id}</span>
-                        <strong>{stateLabel(row.state, c)}</strong>
+                        <strong>{humanQueueLabel(row.state, c)}</strong>
                       </li>
                     ))}
                   </ol>

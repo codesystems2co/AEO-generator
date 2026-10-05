@@ -993,12 +993,22 @@ a.btn-secondary {
   font-size: 0.92rem;
 }
 
+.catalog-queue-item.is-queued strong {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
 .catalog-queue-item.is-analyzing strong {
   color: var(--accent);
 }
 
 .catalog-queue-item.is-analyzed strong {
   color: var(--success);
+}
+
+.catalog-queue-item.is-analyzed {
+  opacity: 0.72;
+  transition: opacity 0.35s ease;
 }
 
 .catalog-reports section {
