@@ -99,6 +99,29 @@ class AllowanceTest(unittest.TestCase):
         self.assertEqual(catalog_metering.allowance_from_rows(rows, "https://b.example"), 7)
         self.assertEqual(catalog_metering.allowance_from_rows(rows, None), 10)
 
+    def test_unbound_catalog_line_does_not_credit_session_host(self):
+        """S00734-style: catalog SO without aeo_site_url must not credit S00247 host."""
+        rows = [
+            _catalog_line(12, host=None),
+            _catalog_line(5, host="https://other.example"),
+        ]
+        self.assertEqual(
+            catalog_metering.allowance_from_rows(rows, "https://shop.example"),
+            0,
+        )
+
+    def test_sums_matching_host_across_separate_partner_orders(self):
+        """Catalog qty on a separate Arki SO still credits when aeo_site_url matches."""
+        rows = [
+            _catalog_line(4, host="https://shop.example"),
+            _catalog_line(6, host="https://shop.example"),
+            _catalog_line(9, host="https://other.example"),
+        ]
+        self.assertEqual(
+            catalog_metering.allowance_from_rows(rows, "https://shop.example"),
+            10,
+        )
+
     def test_detects_template_id_110(self):
         rows = [
             {
@@ -154,7 +177,8 @@ class PersistTest(_StoreCase):
         self.assertEqual(snap["used"], 1)
         self.assertEqual(snap["remaining"], 4)
         self.assertEqual(snap["processed_ids"], 1)
-        self.assertEqual(snap["acquire_url"], PRODUCT_URL)
+        self.assertIn("hostname=shop.example", snap["acquire_url"])
+        self.assertTrue(snap["acquire_url"].startswith(PRODUCT_URL))
 
 
 class ApplyCreditsTest(_StoreCase):
@@ -224,6 +248,27 @@ class AcquireUrlTest(unittest.TestCase):
     def test_acquire_url_stays_when_owned(self):
         self.assertEqual(catalog_product_url(True), PRODUCT_URL)
         self.assertEqual(catalog_product_url(False), PRODUCT_URL)
+
+    def test_acquire_url_includes_session_hostname_and_qty(self):
+        url = catalog_product_url(
+            False,
+            host="https://www.shop.example",
+            quantity=8,
+        )
+        self.assertIn("aeo_site_url=", url)
+        self.assertIn("hostname=shop.example", url)
+        self.assertIn("qty=8", url)
+        self.assertTrue(url.startswith(PRODUCT_URL))
+
+    def test_snapshot_acquire_url_binds_host(self):
+        snap = catalog_metering.metering_snapshot(
+            "lic-acq",
+            "https://shop.example",
+            0,
+            needed_qty=3,
+        )
+        self.assertIn("hostname=shop.example", snap["acquire_url"])
+        self.assertIn("qty=3", snap["acquire_url"])
 
 
 if __name__ == "__main__":

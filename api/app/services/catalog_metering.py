@@ -134,14 +134,18 @@ def allowance_from_rows(
     rows: Sequence[Dict[str, Any]],
     host: Optional[str] = None,
 ) -> int:
+    """Sum catalog product-110 qty on confirmed lines.
+
+    When ``host`` is set, only lines whose ``aeo_site_url`` matches that
+    session hostname count. Unbound catalog lines (no hostname) do not
+    credit a connected shop — that was the S00734 gap.
+    """
     catalog = [dict(row) for row in rows if is_catalog_line(row)]
     if not catalog:
         return 0
     wanted = normalize_host(host)
     if wanted:
-        matched = [row for row in catalog if line_host(row) == wanted]
-        if matched:
-            catalog = matched
+        catalog = [row for row in catalog if line_host(row) == wanted]
     total = 0.0
     for row in catalog:
         try:
@@ -216,16 +220,23 @@ def metering_snapshot(
     license_key: str,
     host: Optional[str],
     allowance: int,
+    *,
+    needed_qty: Optional[int] = None,
 ) -> Dict[str, Any]:
+    from app.services.catalog_product import catalog_product_url
+
     used = used_count(license_key, host)
     allow = max(0, int(allowance or 0))
     left = max(0, allow - used)
+    qty = needed_qty
+    if qty is None:
+        qty = left if left > 0 else 1
     return {
         "allowance": allow,
         "used": used,
         "remaining": left,
         "processed_ids": used,
-        "acquire_url": PRODUCT_URL,
+        "acquire_url": catalog_product_url(False, host=host, quantity=qty) or PRODUCT_URL,
     }
 
 

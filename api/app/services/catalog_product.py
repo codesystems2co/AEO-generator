@@ -1,6 +1,9 @@
 """Shop page for the paid catalog pack. Same business flow, different service."""
 from __future__ import annotations
 
+from typing import Optional
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+
 PRODUCT_NAME = "Product Catalog AEO and SEO pack With IA"
 PRODUCT_PATH = "/shop/product-catalog-aeo-and-seo-pack-with-ia-110"
 PRODUCT_URL = "https://arkiphere.cloud/shop/product-catalog-aeo-and-seo-pack-with-ia-110"
@@ -43,7 +46,49 @@ PRODUCT_WEBSITE_HTML = """
 """
 
 
-def catalog_product_url(owned: bool = False) -> str:
-    """Catalog product page — always available so users can buy more fichas."""
+def _normalize_host_for_query(value: Optional[str]) -> str:
+    text = (value or "").strip()
+    if not text:
+        return ""
+    if "://" not in text:
+        text = "https://" + text
+    try:
+        host = urlparse(text).hostname or ""
+    except Exception:
+        host = ""
+    host = host.lower().removeprefix("www.")
+    return host
+
+
+def catalog_product_url(
+    owned: bool = False,
+    *,
+    host: Optional[str] = None,
+    quantity: Optional[int] = None,
+) -> str:
+    """Catalog product page with optional session hostname + needed qty query.
+
+    Always available so users can buy more fichas. Shop aeo_base autofills
+    hostname from ``aeo_site_url`` / ``hostname`` and writes it on cart lines.
+    """
     del owned  # ownership no longer hides the acquire URL
-    return PRODUCT_URL
+    params = []
+    bare = _normalize_host_for_query(host)
+    if bare:
+        site = f"https://{bare}"
+        params.append(("aeo_site_url", site))
+        params.append(("hostname", bare))
+    try:
+        qty = int(quantity) if quantity is not None else 0
+    except (TypeError, ValueError):
+        qty = 0
+    if qty > 0:
+        params.append(("qty", str(qty)))
+    if not params:
+        return PRODUCT_URL
+    parsed = urlparse(PRODUCT_URL)
+    existing = parse_qsl(parsed.query, keep_blank_values=True)
+    # Prefer our session params over any stale query on the base URL.
+    keys = {k for k, _ in params}
+    merged = [(k, v) for k, v in existing if k not in keys] + params
+    return urlunparse(parsed._replace(query=urlencode(merged)))

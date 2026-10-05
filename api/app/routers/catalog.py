@@ -51,6 +51,30 @@ _LINE_FIELDS_FULL = [
 _LINE_FIELDS_MIN = ["name", "product_id", "product_uom_qty", "product_template_id"]
 
 
+def _read_lines_for_order_ids(order_ids: List[int]) -> tuple[List[Dict[str, Any]], Optional[str]]:
+    if not order_ids:
+        return [], None
+    from app.services.entitlement_service import _odoo_execute
+
+    try:
+        rows = _odoo_execute(
+            "sale.order.line",
+            "search_read",
+            [("order_id", "in", order_ids)],
+            fields=_LINE_FIELDS_FULL,
+        )
+    except Exception:
+        rows = _odoo_execute(
+            "sale.order.line",
+            "search_read",
+            [("order_id", "in", order_ids)],
+            fields=_LINE_FIELDS_MIN,
+        )
+    if rows is None:
+        return [], "odoo_unavailable"
+    return [dict(row) for row in (rows or []) if isinstance(row, dict)], None
+
+
 def _order_line_rows(sale_order_name: Optional[str]) -> tuple[List[Dict[str, Any]], Optional[str]]:
     """Return (rows, error). error set when Odoo could not be read (not when order has no lines)."""
     name = (sale_order_name or "").strip()
@@ -63,7 +87,7 @@ def _order_line_rows(sale_order_name: Optional[str]) -> tuple[List[Dict[str, Any
             "sale.order",
             "search_read",
             [("name", "=", name)],
-            fields=["id", "state"],
+            fields=["id", "state", "partner_id"],
             limit=1,
         )
         if found is None:
@@ -74,25 +98,48 @@ def _order_line_rows(sale_order_name: Optional[str]) -> tuple[List[Dict[str, Any
         state = str(found[0].get("state") or "")
         if state and state not in _CONFIRMED:
             return [], None
-        try:
-            rows = _odoo_execute(
-                "sale.order.line",
-                "search_read",
-                [("order_id", "=", found[0]["id"])],
-                fields=_LINE_FIELDS_FULL,
-            )
-        except Exception:
-            rows = _odoo_execute(
-                "sale.order.line",
-                "search_read",
-                [("order_id", "=", found[0]["id"])],
-                fields=_LINE_FIELDS_MIN,
-            )
-        if rows is None:
-            return [], "odoo_unavailable"
-        return [dict(row) for row in (rows or []) if isinstance(row, dict)], None
+        return _read_lines_for_order_ids([found[0]["id"]])
     except Exception as exc:
         return [], str(exc)[:200] or "odoo_unavailable"
+
+
+def _partner_catalog_rows(
+    partner_id: Optional[int],
+    *,
+    fallback_rows: Optional[List[Dict[str, Any]]] = None,
+) -> tuple[List[Dict[str, Any]], Optional[str]]:
+    """Confirmed catalog lines across all partner sale orders (not only license SO).
+
+    Falls back to ``fallback_rows`` (license SO lines) when partner_id is missing
+    or Odoo cannot list partner orders.
+    """
+    fallback = list(fallback_rows or [])
+    try:
+        pid = int(partner_id) if partner_id else 0
+    except (TypeError, ValueError):
+        pid = 0
+    if not pid:
+        return fallback, None
+    try:
+        from app.services.entitlement_service import _odoo_execute
+
+        orders = _odoo_execute(
+            "sale.order",
+            "search_read",
+            [("partner_id", "=", pid), ("state", "in", list(_CONFIRMED))],
+            fields=["id", "name", "state"],
+            limit=80,
+        )
+        if orders is None:
+            return fallback, "odoo_unavailable"
+        order_ids = [int(row["id"]) for row in (orders or []) if row.get("id")]
+        rows, err = _read_lines_for_order_ids(order_ids)
+        if err:
+            return fallback, err
+        # Prefer partner-wide rows; if empty keep license SO rows for diagnostics.
+        return rows or fallback, None
+    except Exception as exc:
+        return fallback, str(exc)[:200] or "odoo_unavailable"
 
 
 def _line_names(rows: List[Dict[str, Any]]) -> List[str]:
@@ -110,10 +157,24 @@ def _metering_for(
     rows: List[Dict[str, Any]],
     *,
     source_error: Optional[str] = None,
+    needed_qty: Optional[int] = None,
 ) -> Dict[str, Any]:
     allowance = catalog_metering.allowance_from_rows(rows, host)
-    snap = catalog_metering.metering_snapshot(lic or "", host, allowance)
-    out = {**snap, "acquire_url": catalog_product_url(False) or PRODUCT_URL}
+    snap = catalog_metering.metering_snapshot(
+        lic or "",
+        host,
+        allowance,
+        needed_qty=needed_qty,
+    )
+    out = {
+        **snap,
+        "acquire_url": catalog_product_url(
+            False,
+            host=host,
+            quantity=needed_qty if needed_qty is not None else (snap.get("remaining") or 1),
+        )
+        or PRODUCT_URL,
+    }
     if source_error:
         out["metering_error"] = source_error
     return out
@@ -139,11 +200,14 @@ def _context(
         if not host:
             host = (pack.get("connection") or {}).get("url")
     rows, lines_error = _order_line_rows(order)
+    partner_id = consumed.get("partner_id")
+    meter_rows, partner_err = _partner_catalog_rows(partner_id, fallback_rows=rows)
+    lines_error = lines_error or partner_err
     offer = catalog_offer(_line_names(rows), host, platforms)
     # Any valid active license for the site unlocks catalog (no second purchase).
     if consumed.get("allowed") is True and not offer.get("owned"):
         offer = {**offer, "owned": True}
-    metering = _metering_for(lic, host, rows, source_error=lines_error)
+    metering = _metering_for(lic, host, meter_rows, source_error=lines_error)
     offer = {**offer, **metering}
     return {
         "license": lic,
@@ -408,7 +472,14 @@ async def catalog_publish(
         allowance=int(ctx.get("allowance") or 0),
     )
     rows, _err = _order_line_rows(ctx["order"])
-    metering = _metering_for(ctx["license"], ctx["host"], rows, source_error=_err)
+    partner_id = (ctx.get("consumed") or {}).get("partner_id")
+    meter_rows, partner_err = _partner_catalog_rows(partner_id, fallback_rows=rows)
+    metering = _metering_for(
+        ctx["license"],
+        ctx["host"],
+        meter_rows,
+        source_error=_err or partner_err,
+    )
     connection_store.record_apply(
         ctx["license"],
         {

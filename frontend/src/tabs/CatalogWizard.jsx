@@ -393,7 +393,7 @@ export default function CatalogWizard({ lang: langProp }) {
             </button>
           </div>
         ) : (
-          <a className="btn gate-acquire" href={acquireUrl}>
+          <a className="btn gate-acquire" href={acquireUrl} target="_blank" rel="noopener noreferrer">
             <IconCart />
             {c.acquire}
           </a>
@@ -421,7 +421,7 @@ export default function CatalogWizard({ lang: langProp }) {
                 .replace('{processed}', String(used))
                 .replace('{needed}', String(Math.max(1, (session?.total || 0) - used)))}
             </p>
-            <a className="btn gate-acquire" href={acquireUrl}>
+            <a className="btn gate-acquire" href={acquireUrl} target="_blank" rel="noopener noreferrer">
               <IconCart />
               {c.acquireMore}
             </a>
