@@ -168,7 +168,10 @@ def _partner_catalog_rows(
         hit = _PARTNER_ROWS_CACHE.get(pid)
         if hit and (now - float(hit.get("at") or 0)) < _PARTNER_ROWS_TTL_SEC:
             cached_rows = list(hit.get("rows") or [])
-            return (cached_rows or fallback), hit.get("err")
+            # Never treat an empty cached scan as authoritative — a transient
+            # Odoo blip must not pin allowance at 0 for the TTL window.
+            if cached_rows:
+                return cached_rows, hit.get("err")
     try:
         from app.services.entitlement_service import _odoo_execute
 
@@ -186,9 +189,11 @@ def _partner_catalog_rows(
         if err:
             return fallback, err
         # Prefer partner-wide rows; if empty keep license SO rows for diagnostics.
+        # Only cache non-empty partner scans so a flaky empty read cannot stick.
         out_rows = rows or fallback
-        with _PARTNER_ROWS_LOCK:
-            _PARTNER_ROWS_CACHE[pid] = {"at": time.monotonic(), "rows": list(rows or []), "err": None}
+        if rows:
+            with _PARTNER_ROWS_LOCK:
+                _PARTNER_ROWS_CACHE[pid] = {"at": time.monotonic(), "rows": list(rows), "err": None}
         return out_rows, None
     except Exception as exc:
         return fallback, str(exc)[:200] or "odoo_unavailable"

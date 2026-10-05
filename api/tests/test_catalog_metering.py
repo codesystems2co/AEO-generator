@@ -358,3 +358,28 @@ class LightPathPartnerMeteringTest(unittest.TestCase):
         self.assertEqual(ctx["offer"]["allowance"], 95)
         self.assertEqual(ctx["offer"]["remaining"], 95)
         self.assertEqual(cached["offer"]["allowance"], 95)
+
+
+    def test_empty_partner_cache_is_not_sticky(self):
+        """Transient empty partner scan must not pin allowance 0 via TTL cache."""
+        from unittest import mock
+        from app.routers import catalog as catalog_router
+        import time as _time
+
+        with catalog_router._PARTNER_ROWS_LOCK:
+            catalog_router._PARTNER_ROWS_CACHE[213] = {"at": _time.monotonic(), "rows": [], "err": None}
+        fallback = [{"name": "General", "product_template_id": [109, "G"], "product_uom_qty": 1}]
+        partner = [{
+            "name": "Product Catalog AEO and SEO pack With IA",
+            "product_template_id": [110, "Catalog"],
+            "product_uom_qty": 46,
+            "aeo_site_url": "https://gap-advertisements-tool-highs.trycloudflare.com",
+        }]
+        with mock.patch.object(catalog_router, "_read_lines_for_order_ids", return_value=(partner, None)), mock.patch(
+            "app.services.entitlement_service._odoo_execute",
+            return_value=[{"id": 740, "name": "S00738", "state": "sale"}],
+        ):
+            rows, err = catalog_router._partner_catalog_rows(213, fallback_rows=fallback)
+        self.assertIsNone(err)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["product_uom_qty"], 46)
